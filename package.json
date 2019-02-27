@@ -1,0 +1,93 @@
+{
+  "name": "re-re-reselect",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": "github:josepot/re-re-reselect",
+  "bugs": "https://github.com/josepot/re-re-reselect/issues",
+  "keywords": [
+    "redux",
+    "selectors",
+    "cached",
+    "functional"
+  ],
+  "author": "Josep M Sobrepere (https://github.com/josepot)",
+  "main": "lib/re-re-reselect.js",
+  "types": "types/index.d.ts",
+  "unpkg": "dist/re-re-reselect.js",
+  "module": "es/re-re-reselect.js",
+  "files": [
+    "dist",
+    "lib",
+    "es",
+    "src",
+    "types/index.d.ts"
+  ],
+  "scripts": {
+    "clean": "rimraf lib dist es coverage",
+    "format": "prettier --write \"{src,test}/**/*.js\"",
+    "format:check": "prettier --list-different \"{src,test}/**/*.js\"",
+    "lint": "eslint src test",
+    "pretest": "npm run build",
+    "test": "jest",
+    "test:watch": "npm test -- --watch",
+    "test:cov": "npm test -- --coverage",
+    "test:types": "dtslint types",
+    "build": "rollup -c",
+    "prepare": "npm run clean && npm run format:check && npm run lint && npm test"
+  },
+  "dependencies": {
+    "loose-envify": "^1.1.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
+    "@babel/node": "^7.0.0",
+    "@babel/plugin-external-helpers": "^7.0.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@babel/preset-env": "^7.1.0",
+    "@babel/preset-flow": "^7.0.0",
+    "@babel/register": "^7.0.0",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-eslint": "^9.0.0",
+    "babel-jest": "^23.6.0",
+    "cross-env": "^5.1.4",
+    "deep-freeze": "^0.0.1",
+    "dtslint": "^0.3.0",
+    "eslint": "^5.6.1",
+    "eslint-config-react-app": "^3.0.3",
+    "eslint-plugin-flowtype": "^2.50.3",
+    "eslint-plugin-import": "^2.11.0",
+    "eslint-plugin-jsx-a11y": "^6.1.2",
+    "eslint-plugin-react": "^7.7.0",
+    "glob": "^7.1.1",
+    "jest": "^23.6.0",
+    "prettier": "^1.14.3",
+    "ramda": "^0.25.0",
+    "redux": "^4.0.0",
+    "rimraf": "^2.6.2",
+    "rollup": "^0.66.4",
+    "rollup-plugin-babel": "^4.0.3",
+    "rollup-plugin-node-resolve": "^3.3.0",
+    "rollup-plugin-replace": "^2.0.0",
+    "rollup-plugin-terser": "^3.0.0"
+  },
+  "npmName": "re-re-reselect",
+  "npmFileMap": [
+    {
+      "basePath": "/dist/",
+      "files": [
+        "*.js"
+      ]
+    }
+  ],
+  "browserify": {
+    "transform": [
+      "loose-envify"
+    ]
+  },
+  "jest": {
+    "testRegex": "(/test/.*\\.spec.js)$",
+    "testURL": "http://localhost/"
+  },
+  "sideEffects": false
+}
