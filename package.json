@@ -1,9 +1,9 @@
 {
-  "name": "re-re-reselect",
+  "name": "re-rereselect",
   "version": "0.0.1",
   "license": "MIT",
-  "repository": "github:josepot/re-re-reselect",
-  "bugs": "https://github.com/josepot/re-re-reselect/issues",
+  "repository": "github:josepot/re-rereselect",
+  "bugs": "https://github.com/josepot/re-rereselect/issues",
   "keywords": [
     "redux",
     "selectors",
@@ -11,10 +11,10 @@
     "functional"
   ],
   "author": "Josep M Sobrepere (https://github.com/josepot)",
-  "main": "lib/re-re-reselect.js",
+  "main": "lib/re-rereselect.js",
   "types": "types/index.d.ts",
-  "unpkg": "dist/re-re-reselect.js",
-  "module": "es/re-re-reselect.js",
+  "unpkg": "dist/re-rereselect.js",
+  "module": "es/re-rereselect.js",
   "files": [
     "dist",
     "lib",
@@ -71,7 +71,7 @@
     "rollup-plugin-replace": "^2.0.0",
     "rollup-plugin-terser": "^3.0.0"
   },
-  "npmName": "re-re-reselect",
+  "npmName": "re-rereselect",
   "npmFileMap": [
     {
       "basePath": "/dist/",
