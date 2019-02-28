@@ -9,7 +9,7 @@ export default [
   // CommonJS
   {
     input: 'src/index.js',
-    output: { file: 'lib/re-rereselect.js', format: 'cjs', indent: false },
+    output: { file: 'lib/redux-views.js', format: 'cjs', indent: false },
     external: [
       ...Object.keys(pkg.dependencies || {}),
       ...Object.keys(pkg.peerDependencies || {})
@@ -20,7 +20,7 @@ export default [
   // ES
   {
     input: 'src/index.js',
-    output: { file: 'es/re-rereselect.js', format: 'es', indent: false },
+    output: { file: 'es/redux-views.js', format: 'es', indent: false },
     external: [
       ...Object.keys(pkg.dependencies || {}),
       ...Object.keys(pkg.peerDependencies || {})
@@ -31,7 +31,7 @@ export default [
   // ES for Browsers
   {
     input: 'src/index.js',
-    output: { file: 'es/re-rereselect.mjs', format: 'es', indent: false },
+    output: { file: 'es/redux-views.mjs', format: 'es', indent: false },
     plugins: [
       nodeResolve({
         jsnext: true
@@ -54,9 +54,9 @@ export default [
   {
     input: 'src/index.js',
     output: {
-      file: 'dist/re-rereselect.js',
+      file: 'dist/redux-views.js',
       format: 'umd',
-      name: 're-rereselect',
+      name: 'redux-views',
       indent: false
     },
     plugins: [
@@ -76,9 +76,9 @@ export default [
   {
     input: 'src/index.js',
     output: {
-      file: 'dist/re-rereselect.min.js',
+      file: 'dist/redux-views.min.js',
       format: 'umd',
-      name: 're-rereselect',
+      name: 'redux-views',
       indent: false
     },
     plugins: [
