@@ -74,8 +74,10 @@ class Selector {
   }
 
   dec(key) {
-    const count = this.usages.get(key) || 0
-    if (count < 2 && this.data.has(key)) this.data.delete(key)
+    const count = this.usages.get(key)
+    if (count === undefined) return
+    if (count === 1) return this.data.delete(key)
+    this.usages.set(key, count - 1)
   }
 }
 
