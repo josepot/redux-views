@@ -54,28 +54,31 @@ describe('createKeyedSelectorFactory', () => {
     const getUserFrom = getUserFactory(getPropsFrom)
     const getUserTo = getUserFactory(getPropsTo)
 
-    expect(getUserFrom.__ref__.cache instanceof Map).toBe(true)
-    expect(getUserFrom.__ref__.cache.size).toBe(0)
-    expect(getUserTo.__ref__.cache).toBe(getUserFrom.__ref__.cache)
+    expect(getUserFrom.getCache() instanceof Map).toBe(true)
+    expect(getUserFrom.getCache().size).toBe(0)
+    expect(getUserTo.getCache()).toBe(getUserFrom.getCache())
 
     expect(getPropsFrom.mock.calls.length).toBe(0)
-    expect(getUserFrom.__ref__.cache.size).toBe(0)
+    expect(getUserFrom.getCache().size).toBe(0)
 
     expect(getUserFrom(state, { from: 1 })).toBe(state.users[1])
-    expect(getUserFrom.__ref__.cache.size).toBe(1)
-    expect(getPropsFrom.mock.calls.length).toBe(1)
-    expect(getUserTo.__ref__.nComputations).toBe(0)
+    expect(getUserFrom.getCache().size).toBe(1)
+    expect(getPropsFrom.mock.calls.length).toBe(2)
+    expect(getUserFrom.recomputations()).toBe(1)
+    expect(getUserTo.recomputations()).toBe(0)
 
     expect(getUserTo(state, { to: 1 })).toBe(state.users[1])
-    expect(getUserFrom.__ref__.cache.size).toBe(1)
-    expect(getUserTo.__ref__.nComputations).toBe(0)
-    expect(getPropsTo.mock.calls.length).toBe(1)
-    expect(getUserTo.__ref__.nComputations).toBe(0)
+    expect(getUserTo.recomputations()).toBe(0)
+    expect(getUserFrom.recomputations()).toBe(1)
+    expect(getPropsTo.mock.calls.length).toBe(2)
+    expect(getUserTo.recomputations()).toBe(0)
+    expect(getUserFrom.getCache().size).toBe(1)
+    expect(getUserTo.getCache().size).toBe(1)
 
     expect(getUserTo(state, { to: 2 })).toBe(state.users[2])
-    expect(getUserFrom.__ref__.cache.size).toBe(2)
-    expect(getUserTo.__ref__.nComputations).toBe(1)
-    expect(getPropsTo.mock.calls.length).toBe(2)
+    expect(getUserTo.recomputations()).toBe(1)
+    expect(getUserFrom.getCache().size).toBe(2)
+    expect(getPropsTo.mock.calls.length).toBe(4)
   })
 })
 
@@ -116,18 +119,18 @@ describe('keyed selectors', () => {
       const joinedOneThree = getJoinedNames(state, { from: 1, to: 3 })
       expect(joinedOneThree).toEqual('foo1-fooo3')
       expect(joinNames.mock.calls.length).toBe(2)
-      expect(getUserTo.__ref__.nComputations).toBe(2)
-      expect(getUserTo.__ref__.cache.size).toBe(2)
-      expect(getUserFrom.__ref__.nComputations).toBe(1)
-      expect(getUserFrom.__ref__.cache.size).toBe(1)
+      expect(getUserTo.recomputations()).toBe(2)
+      expect(getUserTo.getCache().size).toBe(2)
+      expect(getUserFrom.recomputations()).toBe(1)
+      expect(getUserFrom.getCache().size).toBe(1)
 
       const joinedOneTwoAgain = getJoinedNames(state, { from: 1, to: 2 })
       expect(joinedOneTwoAgain).toBe(joinedOneTwo)
       expect(joinNames.mock.calls.length).toBe(2)
-      expect(getUserTo.__ref__.nComputations).toBe(2)
-      expect(getUserTo.__ref__.cache.size).toBe(2)
-      expect(getUserFrom.__ref__.nComputations).toBe(1)
-      expect(getUserFrom.__ref__.cache.size).toBe(1)
+      expect(getUserTo.recomputations()).toBe(2)
+      expect(getUserTo.getCache().size).toBe(2)
+      expect(getUserFrom.recomputations()).toBe(1)
+      expect(getUserFrom.getCache().size).toBe(1)
 
       const newState = {
         ...state,
@@ -140,37 +143,33 @@ describe('keyed selectors', () => {
       const joinedOneThreeAgain = getJoinedNames(newState, { from: 1, to: 3 })
       expect(joinedOneThreeAgain).toBe(joinedOneThree)
       expect(joinNames.mock.calls.length).toBe(2)
-      expect(getUserTo.__ref__.nComputations).toBe(3)
-      expect(getUserTo.__ref__.cache.size).toBe(2)
-      expect(getUserFrom.__ref__.nComputations).toBe(2)
-      expect(getUserFrom.__ref__.cache.size).toBe(1)
-      expect(getJoinedNames.__ref__.nComputations).toBe(2)
-      expect(getJoinedNames.__ref__.cache.size).toBe(2)
+      expect(getUserTo.recomputations()).toBe(3)
+      expect(getUserTo.getCache().size).toBe(2)
+      expect(getUserFrom.recomputations()).toBe(2)
+      expect(getUserFrom.getCache().size).toBe(1)
+      expect(getJoinedNames.recomputations()).toBe(2)
+      expect(getJoinedNames.getCache().size).toBe(2)
     })
   })
 
   describe('usage: refCounts', () => {
     test('it cleans the cache when all users unsubscribe', () => {
       let s = state
-      let props
 
-      const getSubscriptionsOneTwo = getJoinedNames.use()
-      props = { from: 1, to: 2 }
-      const oneTwoSubscriptions = getSubscriptionsOneTwo(s, props)
-      const oneTwoUns = oneTwoSubscriptions.map(fn => fn())
-      getJoinedNames(s, props)
+      const [updateUsage1, stopUsage1] = getJoinedNames.use()
+      let props1 = { from: 1, to: 2 }
+      getJoinedNames(s, props1)
+      updateUsage1(s, props1)
 
-      const getSubscriptionsOneThree = getJoinedNames.use()
-      props = { from: 1, to: 3 }
-      const oneThreeSubscriptions = getSubscriptionsOneThree(s, props)
-      const oneThreeUns = oneThreeSubscriptions.map(fn => fn())
-      getJoinedNames(s, props)
+      const [updateUsage2, stopUsage2] = getJoinedNames.use()
+      let props2 = { from: 1, to: 3 }
+      getJoinedNames(s, props2)
+      updateUsage2(s, props2)
 
-      const getSubscriptionsTwoFour = getJoinedNames.use()
-      props = { from: 2, to: 4 }
-      const twoFourSubscriptions = getSubscriptionsTwoFour(s, props)
-      const twoFourUns = twoFourSubscriptions.map(fn => fn())
-      getJoinedNames(s, props)
+      const [updateUsage3, stopUsage3] = getJoinedNames.use()
+      let props3 = { from: 2, to: 4 }
+      getJoinedNames(s, props3)
+      updateUsage3(s, props3)
 
       s = {
         ...state,
@@ -180,32 +179,31 @@ describe('keyed selectors', () => {
         }
       }
 
-      const oneTwoSubscriptionsAgain = getSubscriptionsOneTwo(s, props)
-      getJoinedNames(s, props)
+      getJoinedNames(s, props1)
+      updateUsage1(s, props1)
+      getJoinedNames(s, props2)
+      updateUsage2(s, props2)
+      getJoinedNames(s, props3)
+      updateUsage3(s, props3)
 
-      expect(oneTwoSubscriptionsAgain.length).toBe(oneTwoSubscriptions.length)
-      oneTwoSubscriptionsAgain.forEach((s, idx) => {
-        expect(s).toBe(oneTwoSubscriptions[idx])
-      })
+      expect(getJoinedNames.getCache().size).toBe(3)
+      expect(getUserTo.getCache().size).toBe(3)
+      expect(getUserFrom.getCache().size).toBe(2)
 
-      expect(getJoinedNames.__ref__.cache.size).toBe(3)
-      expect(getUserTo.__ref__.cache.size).toBe(3)
-      expect(getUserFrom.__ref__.cache.size).toBe(2)
+      stopUsage1()
+      expect(getJoinedNames.getCache().size).toBe(2)
+      expect(getUserTo.getCache().size).toBe(2)
+      expect(getUserFrom.getCache().size).toBe(2)
 
-      oneTwoUns.forEach(fn => fn())
-      expect(getJoinedNames.__ref__.cache.size).toBe(2)
-      expect(getUserTo.__ref__.cache.size).toBe(2)
-      expect(getUserFrom.__ref__.cache.size).toBe(2)
+      stopUsage2()
+      expect(getJoinedNames.getCache().size).toBe(1)
+      expect(getUserTo.getCache().size).toBe(1)
+      expect(getUserFrom.getCache().size).toBe(1)
 
-      oneThreeUns.forEach(fn => fn())
-      expect(getJoinedNames.__ref__.cache.size).toBe(1)
-      expect(getUserTo.__ref__.cache.size).toBe(1)
-      expect(getUserFrom.__ref__.cache.size).toBe(1)
-
-      twoFourUns.forEach(fn => fn())
-      expect(getJoinedNames.__ref__.cache.size).toBe(0)
-      expect(getUserTo.__ref__.cache.size).toBe(0)
-      expect(getUserFrom.__ref__.cache.size).toBe(0)
+      stopUsage3()
+      expect(getJoinedNames.getCache().size).toBe(0)
+      expect(getUserTo.getCache().size).toBe(0)
+      expect(getUserFrom.getCache().size).toBe(0)
     })
   })
 })

@@ -26,102 +26,67 @@ const getKeySelector = dependencies => {
     : getCombinedKeySelector(keySelectors)
 }
 
-const getKeySelectorEntries = (dependencies, keySelector, compute) => {
-  const usableDependencies = dependencies.filter(
-    d => typeof d.use === 'function'
-  )
-
-  const result = [[keySelector, [compute]]]
-  const kSelectorsMap = new WeakMap([[keySelector, 0]])
-
-  usableDependencies.forEach(d => {
-    d.keySelectorEntries.forEach(([kSelector, selectors]) => {
-      const idx = kSelectorsMap.get(kSelector)
-      if (idx !== undefined) {
-        result[idx][1].push(...selectors)
-      } else {
-        kSelectorsMap.set(kSelector, result.length)
-        result.push([kSelector, [...selectors]])
-      }
-    })
-  })
-  return result
-}
-
-class Selector {
-  constructor(dependencies, computeFn) {
-    this.dependencies = dependencies
-    this.computeFn = computeFn
-    this.nComputations = 0
-    this.compute = this.compute.bind(this)
-    this.compute.__ref__ = this
-  }
-
-  compute(...args) {
-    const cache = this.getCache(...args)
+const getComputeFn = (dependencies, computeFn, getCache) => {
+  if (!getCache) getCache = () => new Array(2)
+  let nComputations = 0
+  const resFn = (...args) => {
+    const cache = getCache(...args)
     const [prevArgs, prevRes] = cache
-    const computeFnArgs = this.dependencies.map(fn => fn(...args))
+    const computeFnArgs = dependencies.map(fn => fn(...args))
     if (prevArgs && computeFnArgs.every((val, idx) => val === prevArgs[idx])) {
       return prevRes
     }
-    const res = this.computeFn(...computeFnArgs)
-    this.nComputations++
+    nComputations++
+    const res = computeFn(...computeFnArgs)
     cache[0] = computeFnArgs
     cache[1] = res
     return res
   }
+  resFn.recomputations = () => nComputations
+  return resFn
 }
 
-const selfBind = (that, ...fns) =>
-  fns.forEach(fn => {
-    that[fn] = that[fn].bind(that)
-  })
-
-class InstanceSelector extends Selector {
+class InstanceSelector {
   constructor(dependencies, computeFn, keySelector, cache) {
-    super(dependencies, computeFn)
     this.keySelector = keySelector
-    this.keySelectorEntries = getKeySelectorEntries(
-      dependencies,
-      this.keySelector,
-      this.compute
-    )
     this.cache = cache || new Map()
     this.usages = new Map()
+    this.usableDependencies = dependencies.filter(d => d.use)
 
-    selfBind(this, 'inc', 'dec', 'getCache', 'use')
-
+    this.compute = getComputeFn(
+      dependencies,
+      computeFn,
+      this.getCCache.bind(this)
+    )
     this.compute.keySelector = keySelector
-    this.compute.keySelectorEntries = this.keySelectorEntries
-    this.compute.inc = this.inc
-    this.compute.dec = this.dec
-    this.compute.use = this.use
+    this.compute.use = this.use.bind(this)
+    this.compute.getCache = () => this.cache
   }
 
-  getCache(...args) {
+  getCCache(...args) {
     const key = this.keySelector(...args)
+    this.latestKey = key
     if (!this.cache.has(key)) this.cache.set(key, new Array(2))
     return this.cache.get(key)
   }
 
   use() {
-    let prevKeys = new Array(this.keySelectorEntries.length)
-    let prevFns = new Array(this.keySelectorEntries.length)
-    return (...args) => {
-      const keys = this.keySelectorEntries.map(([ks]) => ks(...args))
-      keys.forEach((key, idx) => {
-        if (key !== prevKeys[idx]) {
-          prevKeys[idx] = key
-          prevFns[idx] = () => {
-            this.keySelectorEntries[idx][1].forEach(s => s.inc(key))
-            return () => {
-              this.keySelectorEntries[idx][1].forEach(s => s.dec(key))
-            }
-          }
-        }
-      })
-      return prevFns
+    const dependantUsages = this.usableDependencies.map(x => x.use())
+    let latestKey
+    const updateUsage = () => {
+      const currentKey = this.latestKey
+      if (latestKey === currentKey) return
+      this.dec(latestKey)
+      this.inc(currentKey)
+      dependantUsages.forEach(([update]) => update())
+      latestKey = currentKey
     }
+    const stopUsage = () => {
+      this.dec(latestKey)
+      dependantUsages.forEach(([, stop]) => stop())
+    }
+
+    return [updateUsage, stopUsage]
   }
 
   inc(key) {
@@ -137,19 +102,6 @@ class InstanceSelector extends Selector {
   }
 }
 
-class FlatSelector extends Selector {
-  constructor(dependencies, computeFn) {
-    super(dependencies, computeFn)
-    this.cache = new Array(2)
-    this.usages = 0
-    this.getCache = this.getCache.bind(this)
-  }
-
-  getCache() {
-    return this.cache
-  }
-}
-
 const getDependencies = args =>
   args.length === 1 && Array.isArray(args[0]) ? args[0] : args
 
@@ -157,8 +109,9 @@ export const createSelector = (...args) => {
   const [computeFn] = args.splice(-1)
   const dependencies = getDependencies(args)
   const keySelector = getKeySelector(dependencies)
-  const SelectorType = keySelector ? InstanceSelector : FlatSelector
-  return new SelectorType(dependencies, computeFn, keySelector).compute
+  return keySelector
+    ? new InstanceSelector(dependencies, computeFn, keySelector).compute
+    : getComputeFn(dependencies, computeFn)
 }
 
 export const createKeyedSelectorFactory = (...args) => {
@@ -166,6 +119,7 @@ export const createKeyedSelectorFactory = (...args) => {
   const dependencies = getDependencies(args)
   const cache = new Map()
   return selector => {
+    console.log('test inside')
     const keySelector = createKeySelector(selector)
     return new InstanceSelector(
       [...dependencies, keySelector],
@@ -177,12 +131,8 @@ export const createKeyedSelectorFactory = (...args) => {
 }
 
 export const createKeySelector = x => {
-  const keySelector = createSelector(
-    [s => s, (s, p) => p],
-    x
-  )
-  keySelector.keySelector = keySelector
-  return keySelector
+  x.keySelector = x
+  return x
 }
 
 export const createStructuredSelector = obj => {
