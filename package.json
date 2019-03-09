@@ -12,13 +12,15 @@
   ],
   "author": "Josep M Sobrepere (https://github.com/josepot)",
   "main": "lib/redux-views.js",
+  "types": "types/index.d.ts",
   "unpkg": "dist/redux-views.js",
   "module": "es/redux-views.js",
   "files": [
     "dist",
     "lib",
     "es",
-    "src"
+    "src",
+    "types/index.d.ts"
   ],
   "scripts": {
     "clean": "rimraf lib dist es coverage",
