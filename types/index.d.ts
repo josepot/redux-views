@@ -352,3 +352,25 @@ export function createStructuredSelector<S, P, T>(
 export function createStructuredSelector<S, P, T>(
   selectors: {[K in keyof T]: ParametricSelector<S, P, T[K]>},
 ): ParametricSelector<S, P, T>;
+
+interface KeySelectorFactory {
+  <S>(keySelector: Selector<S, string>): InstanceSelector<S, string>;
+  <S, P>(keySelector: ParametricSelector<S, P, string>): ParametricInstanceSelector<S, P, string>;
+}
+export const createKeySelector: KeySelectorFactory;
+
+interface KeyedSelectorFactory<S, T> {
+  (keySelector: Selector<S, string>): InstanceSelector<S, T>;
+  <P>(keySelector: ParametricSelector<S, P, string>): ParametricInstanceSelector<S, P, T>;
+}
+interface ParametricKeyedSelectorFactory<S, T, P1> {
+  <P2>(keySelector: ParametricSelector<S, P2, string>): ParametricInstanceSelector<S, P1 & P2, T>;
+}
+export function createKeyedSelectorFactory<S, R, T>(
+  selector1: Selector<S, R>,
+  combiner: (res1: R, key: string) => T
+): KeyedSelectorFactory<S, T>;
+export function createKeyedSelectorFactory<S, P, R, T>(
+  selector1: ParametricSelector<S, P, R>,
+  combiner: (res1: R, key: string) => T
+): ParametricKeyedSelectorFactory<S, T, P>;
