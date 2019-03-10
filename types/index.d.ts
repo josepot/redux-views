@@ -1,19 +1,22 @@
+// TypeScript Version: 3.0
+
 export type Selector<S, R> = (state: S) => R;
 export type ParametricSelector<S, P, R> = (state: S, props: P, ...args: any[]) => R;
 
-type InstanceProps<S> = {
-    keySelector: Selector<S, string>
-};
-type OutputProps = {
-  recomputations: () => number;  
-};
+interface InstanceProps<S> {
+  keySelector: Selector<S, string>;
+}
+interface OutputProps {
+  recomputations: () => number;
+}
 type OutputInstanceProps<S> = OutputProps & {
   use: () => [() => void, () => void],
   getCache: () => Map<string, any>
-}
-type ParametricInstanceProps<S, P> = {
-    keySelector: ParametricSelector<S, P, string>
 };
+interface ParametricInstanceProps<S, P> {
+  keySelector: ParametricSelector<S, P, string>;
+}
+export { };
 
 export type OutputSelector<S, R> = Selector<S, R> & OutputProps;
 export type InstanceSelector<S, R> = Selector<S, R> & InstanceProps<S>;
@@ -23,7 +26,7 @@ export type OutputParametricSelector<S, P, R> = ParametricSelector<S, P, R> & Ou
 export type ParametricInstanceSelector<S, P, R> = ParametricSelector<S, P, R> & ParametricInstanceProps<S, P>;
 export type OutputParametricInstanceSelector<S, P, R> = ParametricSelector<S, P, R> & OutputInstanceProps<S> & ParametricInstanceProps<S, P>;
 
-export type MaybeInstanceSelector<S, R> = Selector<S, R> | InstanceSelector<S, R>;
+export type MaybeInstanceSelector<S, R> = Selector<S, R> | InstanceSelector<S, R>;
 export type MaybeParametricInstanceSelector<S, P, R> = ParametricSelector<S, P, R> | ParametricInstanceSelector<S, P, R>;
 
 /* homogeneous selector parameter types */
@@ -136,7 +139,6 @@ export function createSelector<S, P, R1, R2, R3, T>(
   selector3: ParametricSelector<S, P, R3>,
   combiner: (res1: R1, res2: R2, res3: R3) => T,
 ): OutputParametricSelector<S, P, T>;
-
 
 /* array argument */
 
