@@ -1,5 +1,8 @@
 // TypeScript Version: 3.0
 
+export type Selector<S, R> = (state: S) => R;
+export type ParametricSelector<S, P, R> = (state: S, props: P, ...args: any[]) => R;
+
 /////////////////////////
 /// createKeySelector ///
 /////////////////////////
@@ -22,45 +25,42 @@ export interface ParametricKeyedSelectorFactory<S1, P1, T> {
   <S2, P2>(keySelector: ParametricSelector<S2, P2, string>): ParametricInstanceSelector<S1 & S2, P1 & P2, T>;
 }
 
-export function createKeyedSelectorFactory<S1, R, T>(
-  selector1: Selector<S1, R>,
-  combiner: (res1: R, key: string) => T
+export function createKeyedSelectorFactory<S1, R1, T>(
+  selector1: Selector<S1, R1>,
+  combiner: (res1: R1, key: string) => T
 ): KeyedSelectorFactory<S1, T>;
-export function createKeyedSelectorFactory<S1, P1, R, T>(
-  selector1: ParametricSelector<S1, P1, R>,
-  combiner: (res1: R, key: string) => T
+export function createKeyedSelectorFactory<S1, P1, R1, T>(
+  selector1: ParametricSelector<S1, P1, R1>,
+  combiner: (res1: R1, key: string) => T
 ): ParametricKeyedSelectorFactory<S1, P1, T>;
 
-export function createKeyedSelectorFactory<S1, S2, R, T>(
-  selector1: Selector<S1, R>,
-  selector2: Selector<S2, R>,
-  combiner: (res1: R, key: string) => T
+export function createKeyedSelectorFactory<S1, S2, R1, R2, T>(
+  selector1: Selector<S1, R1>,
+  selector2: Selector<S2, R2>,
+  combiner: (res1: R1, res2: R2, key: string) => T
 ): KeyedSelectorFactory<S1 & S2, T>;
-export function createKeyedSelectorFactory<S1, S2, P1, P2, R, T>(
-  selector1: ParametricSelector<S1, P1, R>,
-  selector2: ParametricSelector<S2, P2, R>,
-  combiner: (res1: R, key: string) => T
+export function createKeyedSelectorFactory<S1, S2, P1, P2, R1, R2, T>(
+  selector1: ParametricSelector<S1, P1, R1>,
+  selector2: ParametricSelector<S2, P2, R2>,
+  combiner: (res1: R1, res2: R2, key: string) => T
 ): ParametricKeyedSelectorFactory<S1 & S2, P1 & P2, T>;
 
-export function createKeyedSelectorFactory<S1, S2, S3, R, T>(
-  selector1: Selector<S1, R>,
-  selector2: Selector<S2, R>,
-  selector3: Selector<S3, R>,
-  combiner: (res1: R, key: string) => T
+export function createKeyedSelectorFactory<S1, S2, S3, R1, R2, R3, T>(
+  selector1: Selector<S1, R1>,
+  selector2: Selector<S2, R2>,
+  selector3: Selector<S3, R3>,
+  combiner: (res1: R1, res2: R2, res3: R3, key: string) => T
 ): KeyedSelectorFactory<S1 & S2 & S3, T>;
-export function createKeyedSelectorFactory<S1, S2, S3, P1, P2, P3, R, T>(
-  selector1: ParametricSelector<S1, P1, R>,
-  selector2: ParametricSelector<S2, P2, R>,
-  selector3: ParametricSelector<S3, P3, R>,
-  combiner: (res1: R, key: string) => T
+export function createKeyedSelectorFactory<S1, S2, S3, P1, P2, P3, R1, R2, R3, T>(
+  selector1: ParametricSelector<S1, P1, R1>,
+  selector2: ParametricSelector<S2, P2, R2>,
+  selector3: ParametricSelector<S3, P3, R3>,
+  combiner: (res1: R1, res2: R2, res3: R3, key: string) => T
 ): ParametricKeyedSelectorFactory<S1 & S2 & S3, P1 & P2 & P3, T>;
 
 //////////////////////
 /// createSelector ///
 //////////////////////
-
-export type Selector<S, R> = (state: S) => R;
-export type ParametricSelector<S, P, R> = (state: S, props: P, ...args: any[]) => R;
 
 interface InstanceProps<S> {
   keySelector: Selector<S, string>;
