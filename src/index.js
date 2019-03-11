@@ -18,7 +18,13 @@ const getCombinedKeySelector = keySelectors => {
 }
 
 const getKeySelector = dependencies => {
-  const keySelectors = dependencies.map(x => x.keySelector).filter(Boolean)
+  const keySelectorsSet = new WeakSet()
+  const keySelectors = []
+  dependencies.forEach(({ keySelector }) => {
+    if (!keySelector || keySelectorsSet.has(keySelector)) return
+    keySelectors.push(keySelector)
+    keySelectorsSet.add(keySelector)
+  })
 
   if (keySelectors.length === 0) return null
   return keySelectors.length === 1
@@ -53,40 +59,46 @@ class InstanceSelector {
     this.usages = new Map()
     this.usableDependencies = dependencies.filter(d => d.use)
 
-    this.compute = getComputeFn(
-      dependencies,
-      computeFn,
-      this.getCCache.bind(this)
-    )
+    this.compute = getComputeFn(dependencies, computeFn, (...args) => {
+      const key = this.keySelector(...args)
+      this.latestKey = key
+      if (!this.cache.has(key)) this.cache.set(key, new Array(2))
+      return this.cache.get(key)
+    })
     this.compute.keySelector = keySelector
     this.compute.use = this.use.bind(this)
-    this.compute.getCache = () => this.cache
-  }
-
-  getCCache(...args) {
-    const key = this.keySelector(...args)
-    this.latestKey = key
-    if (!this.cache.has(key)) this.cache.set(key, new Array(2))
-    return this.cache.get(key)
+    if (process.env.NODE_ENV === 'test') {
+      this.compute.getCache = () => this.cache
+    }
+    this.compute.clearCache = (recursive = true) => {
+      this.cache.clear()
+      this.usages.clear()
+      if (recursive) this.usableDependencies.forEach(x => x.clearCache())
+    }
   }
 
   use() {
     const dependantUsages = this.usableDependencies.map(x => x.use())
-    let latestKey
-    const updateUsage = () => {
+    let prevKey
+    let hasStopped = false
+    const selector = (...args) => {
+      const res = this.compute(...args)
       const currentKey = this.latestKey
-      if (latestKey === currentKey) return
-      this.dec(latestKey)
+      if (prevKey === currentKey) return res
+      this.dec(prevKey)
       this.inc(currentKey)
-      dependantUsages.forEach(([update]) => update())
-      latestKey = currentKey
+      dependantUsages.forEach(([s]) => s(...args))
+      prevKey = currentKey
+      return res
     }
     const stopUsage = () => {
-      this.dec(latestKey)
+      if (hasStopped) return
+      hasStopped = true
+      this.dec(prevKey)
       dependantUsages.forEach(([, stop]) => stop())
     }
 
-    return [updateUsage, stopUsage]
+    return [selector, stopUsage]
   }
 
   inc(key) {
@@ -119,7 +131,6 @@ export const createKeyedSelectorFactory = (...args) => {
   const dependencies = getDependencies(args)
   const cache = new Map()
   return selector => {
-    console.log('test inside')
     const keySelector = createKeySelector(selector)
     return new InstanceSelector(
       [...dependencies, keySelector],
