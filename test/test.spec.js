@@ -5,6 +5,8 @@ import {
   createKeyedSelectorFactory
 } from '../src'
 
+console.log('env', process.env.NODE_ENV)
+
 const state = {
   users: {
     1: { id: 1, name: 'foo1' },
@@ -156,20 +158,17 @@ describe('keyed selectors', () => {
     test('it cleans the cache when all users unsubscribe', () => {
       let s = state
 
-      const [updateUsage1, stopUsage1] = getJoinedNames.use()
+      const [selector1, stopUsage1] = getJoinedNames.use()
       let props1 = { from: 1, to: 2 }
-      getJoinedNames(s, props1)
-      updateUsage1(s, props1)
+      selector1(s, props1)
 
-      const [updateUsage2, stopUsage2] = getJoinedNames.use()
+      const [selector2, stopUsage2] = getJoinedNames.use()
       let props2 = { from: 1, to: 3 }
-      getJoinedNames(s, props2)
-      updateUsage2(s, props2)
+      selector2(s, props2)
 
-      const [updateUsage3, stopUsage3] = getJoinedNames.use()
+      const [selector3, stopUsage3] = getJoinedNames.use()
       let props3 = { from: 2, to: 4 }
-      getJoinedNames(s, props3)
-      updateUsage3(s, props3)
+      selector3(s, props3)
 
       s = {
         ...state,
@@ -179,12 +178,9 @@ describe('keyed selectors', () => {
         }
       }
 
-      getJoinedNames(s, props1)
-      updateUsage1(s, props1)
-      getJoinedNames(s, props2)
-      updateUsage2(s, props2)
-      getJoinedNames(s, props3)
-      updateUsage3(s, props3)
+      selector1(s, props1)
+      selector2(s, props2)
+      selector3(s, props3)
 
       expect(getJoinedNames.getCache().size).toBe(3)
       expect(getUserTo.getCache().size).toBe(3)
@@ -204,6 +200,90 @@ describe('keyed selectors', () => {
       expect(getJoinedNames.getCache().size).toBe(0)
       expect(getUserTo.getCache().size).toBe(0)
       expect(getUserFrom.getCache().size).toBe(0)
+    })
+  })
+
+  describe('clear cache', () => {
+    test('it clears the cache recursively', () => {
+      getJoinedNames(state, { from: 1, to: 2 })
+      getJoinedNames(state, { from: 3, to: 2 })
+      getJoinedNames(state, { from: 1, to: 3 })
+
+      expect(getJoinedNames.getCache().size).toBe(3)
+      expect(getUserTo.getCache().size).toBe(2)
+      expect(getUserFrom.getCache().size).toBe(2)
+
+      getJoinedNames.clearCache()
+      expect(getJoinedNames.getCache().size).toBe(0)
+      expect(getUserTo.getCache().size).toBe(0)
+      expect(getUserFrom.getCache().size).toBe(0)
+    })
+
+    test('it clears the cache non recursively', () => {
+      getJoinedNames(state, { from: 1, to: 2 })
+      getJoinedNames(state, { from: 3, to: 2 })
+      getJoinedNames(state, { from: 1, to: 3 })
+
+      expect(getJoinedNames.getCache().size).toBe(3)
+      expect(getUserTo.getCache().size).toBe(2)
+      expect(getUserFrom.getCache().size).toBe(2)
+
+      getJoinedNames.clearCache(false)
+      expect(getJoinedNames.getCache().size).toBe(0)
+      expect(getUserTo.getCache().size).toBe(2)
+      expect(getUserFrom.getCache().size).toBe(2)
+    })
+  })
+
+  describe('keySelector', () => {
+    test('it should not create new keySelectors unless it is required', () => {
+      const propIdSelector = createKeySelector((state, { id }) => id)
+
+      const isItemLoadingSelector = createSelector(
+        [propIdSelector, () => ({})],
+        Function.prototype
+      )
+
+      const isItemSelectedSelector = createSelector(
+        [propIdSelector, () => ({})],
+        Function.prototype
+      )
+
+      const rawItemSelector = createSelector(
+        [propIdSelector, () => ({})],
+        Function.prototype
+      )
+
+      const itemSelector = createSelector(
+        [rawItemSelector, isItemLoadingSelector, isItemSelectedSelector],
+        (item, isLoading, isSelected) => ({
+          ...item,
+          isLoading,
+          isSelected
+        })
+      )
+
+      expect(isItemLoadingSelector.keySelector).toBe(propIdSelector)
+      expect(isItemSelectedSelector.keySelector).toBe(propIdSelector)
+      expect(rawItemSelector.keySelector).toBe(propIdSelector)
+      expect(itemSelector.keySelector).toBe(propIdSelector)
+    })
+
+    test('it should create new keySelectors when it is required', () => {
+      const getUserFactory = createKeyedSelectorFactory(
+        getUsers,
+        (users, key) => users[key]
+      )
+      const getUserFrom = getUserFactory((s, { from }) => from)
+      const getUserTo = getUserFactory((s, { to }) => to)
+      const compareUsers = createSelector(
+        [getUserFrom, getUserTo],
+        () => null
+      )
+
+      expect(getUserFrom.keySelector).not.toBe(getUserTo.keySelector)
+      expect(compareUsers.keySelector).not.toBe(getUserTo.keySelector)
+      expect(compareUsers.keySelector).not.toBe(getUserFrom.keySelector)
     })
   })
 })
