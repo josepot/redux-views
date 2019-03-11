@@ -49,6 +49,7 @@ const getComputeFn = (dependencies, computeFn, getCache) => {
     return res
   }
   resFn.recomputations = () => nComputations
+  resFn.resetRecomputations = () => (nComputations = 0)
   return resFn
 }
 
@@ -159,3 +160,5 @@ export const createStructuredSelector = obj => {
     compute
   )
 }
+
+export const isInstanceSelector = sel => sel.keySelector && sel.use
