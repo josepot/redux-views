@@ -19,7 +19,7 @@ if (isInstanceSelector(selector)) {
   // $ExpectType OutputInstanceSelector<{ selectedContact: string; }, boolean>
   selector;
 
-  // $ExpectType [() => void, () => void]
+  // $ExpectType [Selector<{ selectedContact: string; }, boolean>, () => void]
   selector.use();
 }
 

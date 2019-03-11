@@ -10,9 +10,15 @@ interface OutputProps {
 interface InstanceProps<S> {
   keySelector: Selector<S, string>;
 }
-type OutputInstanceProps<S> = OutputProps & {
-  use: () => [() => void, () => void],
-  getCache: () => Map<string, any>
+type OutputInstanceProps<S, R> = OutputProps & {
+  use: () => [Selector<S, R>, () => void],
+  clearCache: (recursive?: boolean) => void,
+  getCache?: () => Map<string, any>, // Only available on NODE_ENV=test
+};
+type OutputParametricInstanceProps<S, P, R> = OutputProps & {
+  use: () => [ParametricSelector<S, P, R>, () => void],
+  clearCache: (recursive?: boolean) => void,
+  getCache?: () => Map<string, any>, // Only available on NODE_ENV=test
 };
 interface ParametricInstanceProps<S, P> {
   keySelector: ParametricSelector<S, P, string>;
@@ -20,11 +26,11 @@ interface ParametricInstanceProps<S, P> {
 
 export type OutputSelector<S, R> = Selector<S, R> & OutputProps;
 export type InstanceSelector<S, R> = Selector<S, R> & InstanceProps<S>;
-export type OutputInstanceSelector<S, R> = Selector<S, R> & OutputProps & OutputInstanceProps<S> & InstanceProps<S>;
+export type OutputInstanceSelector<S, R> = Selector<S, R> & OutputProps & OutputInstanceProps<S, R> & InstanceProps<S>;
 
 export type OutputParametricSelector<S, P, R> = ParametricSelector<S, P, R> & OutputProps;
 export type ParametricInstanceSelector<S, P, R> = ParametricSelector<S, P, R> & ParametricInstanceProps<S, P>;
-export type OutputParametricInstanceSelector<S, P, R> = ParametricSelector<S, P, R> & OutputInstanceProps<S> & ParametricInstanceProps<S, P>;
+export type OutputParametricInstanceSelector<S, P, R> = ParametricSelector<S, P, R> & OutputParametricInstanceProps<S, P, R> & ParametricInstanceProps<S, P>;
 
 export function isInstanceSelector<S, R>(selector: OutputSelector<S, R>): selector is OutputInstanceSelector<S, R>;
 export function isInstanceSelector<S, P, R>(selector: OutputParametricSelector<S, P, R>): selector is OutputParametricInstanceSelector<S, P, R>;
