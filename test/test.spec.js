@@ -51,36 +51,20 @@ describe('createKeyedSelectorFactory', () => {
       (users, key) => users[key]
     )
 
-    const getPropsFrom = jest.fn((s, { from }) => from)
-    const getPropsTo = jest.fn((s, { to }) => to)
-    const getUserFrom = getUserFactory(getPropsFrom)
-    const getUserTo = getUserFactory(getPropsTo)
-
-    expect(getUserFrom.getCache() instanceof Map).toBe(true)
-    expect(getUserFrom.getCache().size).toBe(0)
-    expect(getUserTo.getCache()).toBe(getUserFrom.getCache())
-
-    expect(getPropsFrom.mock.calls.length).toBe(0)
-    expect(getUserFrom.getCache().size).toBe(0)
+    const getUserFrom = getUserFactory((s, { from }) => from)
+    const getUserTo = getUserFactory((s, { to }) => to)
 
     expect(getUserFrom(state, { from: 1 })).toBe(state.users[1])
-    expect(getUserFrom.getCache().size).toBe(1)
-    expect(getPropsFrom.mock.calls.length).toBe(2)
     expect(getUserFrom.recomputations()).toBe(1)
     expect(getUserTo.recomputations()).toBe(0)
 
     expect(getUserTo(state, { to: 1 })).toBe(state.users[1])
-    expect(getUserTo.recomputations()).toBe(0)
     expect(getUserFrom.recomputations()).toBe(1)
-    expect(getPropsTo.mock.calls.length).toBe(2)
     expect(getUserTo.recomputations()).toBe(0)
-    expect(getUserFrom.getCache().size).toBe(1)
-    expect(getUserTo.getCache().size).toBe(1)
 
     expect(getUserTo(state, { to: 2 })).toBe(state.users[2])
     expect(getUserTo.recomputations()).toBe(1)
-    expect(getUserFrom.getCache().size).toBe(2)
-    expect(getPropsTo.mock.calls.length).toBe(4)
+    expect(getUserFrom.recomputations()).toBe(1)
   })
 })
 
@@ -92,13 +76,11 @@ describe('keyed selectors', () => {
     getToProp = createKeySelector((state, { to }) => to)
 
     getUserFrom = createSelector(
-      getFromProp,
-      getUsers,
+      [getFromProp, getUsers],
       prop
     )
     getUserTo = createSelector(
-      getToProp,
-      getUsers,
+      [getToProp, getUsers],
       prop
     )
 
@@ -117,22 +99,23 @@ describe('keyed selectors', () => {
       const joinedOneTwo = getJoinedNames(state, { from: 1, to: 2 })
       expect(joinedOneTwo).toEqual('foo1-foo2')
       expect(joinNames.mock.calls.length).toBe(1)
+      expect(getUserTo.recomputations()).toBe(1)
+      expect(getUserFrom.recomputations()).toBe(1)
+      expect(getJoinedNames.recomputations()).toBe(1)
 
       const joinedOneThree = getJoinedNames(state, { from: 1, to: 3 })
       expect(joinedOneThree).toEqual('foo1-fooo3')
       expect(joinNames.mock.calls.length).toBe(2)
       expect(getUserTo.recomputations()).toBe(2)
-      expect(getUserTo.getCache().size).toBe(2)
       expect(getUserFrom.recomputations()).toBe(1)
-      expect(getUserFrom.getCache().size).toBe(1)
+      expect(getJoinedNames.recomputations()).toBe(2)
 
       const joinedOneTwoAgain = getJoinedNames(state, { from: 1, to: 2 })
       expect(joinedOneTwoAgain).toBe(joinedOneTwo)
       expect(joinNames.mock.calls.length).toBe(2)
       expect(getUserTo.recomputations()).toBe(2)
-      expect(getUserTo.getCache().size).toBe(2)
       expect(getUserFrom.recomputations()).toBe(1)
-      expect(getUserFrom.getCache().size).toBe(1)
+      expect(getJoinedNames.recomputations()).toBe(2)
 
       const newState = {
         ...state,
@@ -146,11 +129,8 @@ describe('keyed selectors', () => {
       expect(joinedOneThreeAgain).toBe(joinedOneThree)
       expect(joinNames.mock.calls.length).toBe(2)
       expect(getUserTo.recomputations()).toBe(3)
-      expect(getUserTo.getCache().size).toBe(2)
       expect(getUserFrom.recomputations()).toBe(2)
-      expect(getUserFrom.getCache().size).toBe(1)
       expect(getJoinedNames.recomputations()).toBe(2)
-      expect(getJoinedNames.getCache().size).toBe(2)
     })
   })
 
@@ -161,14 +141,17 @@ describe('keyed selectors', () => {
       const [selector1, stopUsage1] = getJoinedNames.use()
       let props1 = { from: 1, to: 2 }
       selector1(s, props1)
+      expect(getJoinedNames.recomputations()).toBe(1)
 
       const [selector2, stopUsage2] = getJoinedNames.use()
       let props2 = { from: 1, to: 3 }
       selector2(s, props2)
+      expect(getJoinedNames.recomputations()).toBe(2)
 
       const [selector3, stopUsage3] = getJoinedNames.use()
       let props3 = { from: 2, to: 4 }
       selector3(s, props3)
+      expect(getJoinedNames.recomputations()).toBe(3)
 
       s = {
         ...state,
@@ -181,25 +164,19 @@ describe('keyed selectors', () => {
       selector1(s, props1)
       selector2(s, props2)
       selector3(s, props3)
-
-      expect(getJoinedNames.getCache().size).toBe(3)
-      expect(getUserTo.getCache().size).toBe(3)
-      expect(getUserFrom.getCache().size).toBe(2)
+      getJoinedNames(s, props1)
+      getJoinedNames(s, props2)
+      getJoinedNames(s, props3)
+      expect(getJoinedNames.recomputations()).toBe(3)
 
       stopUsage1()
-      expect(getJoinedNames.getCache().size).toBe(2)
-      expect(getUserTo.getCache().size).toBe(2)
-      expect(getUserFrom.getCache().size).toBe(2)
-
       stopUsage2()
-      expect(getJoinedNames.getCache().size).toBe(1)
-      expect(getUserTo.getCache().size).toBe(1)
-      expect(getUserFrom.getCache().size).toBe(1)
-
       stopUsage3()
-      expect(getJoinedNames.getCache().size).toBe(0)
-      expect(getUserTo.getCache().size).toBe(0)
-      expect(getUserFrom.getCache().size).toBe(0)
+
+      getJoinedNames(s, props1)
+      getJoinedNames(s, props2)
+      getJoinedNames(s, props3)
+      expect(getJoinedNames.recomputations()).toBe(6)
     })
   })
 
@@ -209,14 +186,27 @@ describe('keyed selectors', () => {
       getJoinedNames(state, { from: 3, to: 2 })
       getJoinedNames(state, { from: 1, to: 3 })
 
-      expect(getJoinedNames.getCache().size).toBe(3)
-      expect(getUserTo.getCache().size).toBe(2)
-      expect(getUserFrom.getCache().size).toBe(2)
+      expect(getJoinedNames.recomputations()).toBe(3)
+      expect(getUserTo.recomputations()).toBe(2)
+      expect(getUserFrom.recomputations()).toBe(2)
+
+      getJoinedNames(state, { from: 1, to: 2 })
+      getJoinedNames(state, { from: 3, to: 2 })
+      getJoinedNames(state, { from: 1, to: 3 })
+
+      expect(getJoinedNames.recomputations()).toBe(3)
+      expect(getUserTo.recomputations()).toBe(2)
+      expect(getUserFrom.recomputations()).toBe(2)
 
       getJoinedNames.clearCache()
-      expect(getJoinedNames.getCache().size).toBe(0)
-      expect(getUserTo.getCache().size).toBe(0)
-      expect(getUserFrom.getCache().size).toBe(0)
+
+      getJoinedNames(state, { from: 1, to: 2 })
+      getJoinedNames(state, { from: 3, to: 2 })
+      getJoinedNames(state, { from: 1, to: 3 })
+
+      expect(getJoinedNames.recomputations()).toBe(6)
+      expect(getUserTo.recomputations()).toBe(4)
+      expect(getUserFrom.recomputations()).toBe(4)
     })
 
     test('it clears the cache non recursively', () => {
@@ -224,14 +214,27 @@ describe('keyed selectors', () => {
       getJoinedNames(state, { from: 3, to: 2 })
       getJoinedNames(state, { from: 1, to: 3 })
 
-      expect(getJoinedNames.getCache().size).toBe(3)
-      expect(getUserTo.getCache().size).toBe(2)
-      expect(getUserFrom.getCache().size).toBe(2)
+      expect(getJoinedNames.recomputations()).toBe(3)
+      expect(getUserTo.recomputations()).toBe(2)
+      expect(getUserFrom.recomputations()).toBe(2)
+
+      getJoinedNames(state, { from: 1, to: 2 })
+      getJoinedNames(state, { from: 3, to: 2 })
+      getJoinedNames(state, { from: 1, to: 3 })
+
+      expect(getJoinedNames.recomputations()).toBe(3)
+      expect(getUserTo.recomputations()).toBe(2)
+      expect(getUserFrom.recomputations()).toBe(2)
 
       getJoinedNames.clearCache(false)
-      expect(getJoinedNames.getCache().size).toBe(0)
-      expect(getUserTo.getCache().size).toBe(2)
-      expect(getUserFrom.getCache().size).toBe(2)
+
+      getJoinedNames(state, { from: 1, to: 2 })
+      getJoinedNames(state, { from: 3, to: 2 })
+      getJoinedNames(state, { from: 1, to: 3 })
+
+      expect(getJoinedNames.recomputations()).toBe(6)
+      expect(getUserTo.recomputations()).toBe(2)
+      expect(getUserFrom.recomputations()).toBe(2)
     })
   })
 
