@@ -53,38 +53,43 @@ const getComputeFn = (dependencies, computeFn, getCache) => {
   return resFn
 }
 
-class InstanceSelector {
-  constructor(dependencies, computeFn, keySelector, cache) {
-    this.keySelector = keySelector
-    this.cache = cache || new Map()
-    this.usages = new Map()
-    this.usableDependencies = dependencies.filter(d => d.use)
+const getInstanceSelector = (
+  dependencies,
+  computeFn,
+  keySelector,
+  cache = new Map()
+) => {
+  const usages = new Map()
+  const usableDependencies = dependencies.filter(d => d.use)
+  let latestKey
 
-    this.compute = getComputeFn(dependencies, computeFn, (...args) => {
-      const key = this.keySelector(...args)
-      this.latestKey = key
-      if (!this.cache.has(key)) this.cache.set(key, new Array(2))
-      return this.cache.get(key)
-    })
-    this.compute.keySelector = keySelector
-    this.compute.use = this.use.bind(this)
-    this.compute.clearCache = (recursive = true) => {
-      this.cache.clear()
-      this.usages.clear()
-      if (recursive) this.usableDependencies.forEach(x => x.clearCache())
-    }
+  const result = getComputeFn(dependencies, computeFn, (...args) => {
+    const key = keySelector(...args)
+    latestKey = key
+    if (!cache.has(key)) cache.set(key, new Array(2))
+    return cache.get(key)
+  })
+
+  result.keySelector = keySelector
+
+  const inc = key => usages.set(key, (usages.get(key) || 0) + 1)
+  const dec = key => {
+    const count = usages.get(key)
+    if (count === undefined) return
+    if (count === 1) cache.delete(key)
+    usages.set(key, count - 1)
   }
 
-  use() {
-    const dependantUsages = this.usableDependencies.map(x => x.use())
+  result.use = () => {
+    const dependantUsages = usableDependencies.map(x => x.use())
     let prevKey
     let hasStopped = false
     const selector = (...args) => {
-      const res = this.compute(...args)
-      const currentKey = this.latestKey
+      const res = result(...args)
+      const currentKey = latestKey
       if (prevKey === currentKey) return res
-      this.dec(prevKey)
-      this.inc(currentKey)
+      dec(prevKey)
+      inc(currentKey)
       dependantUsages.forEach(([s]) => s(...args))
       prevKey = currentKey
       return res
@@ -92,24 +97,20 @@ class InstanceSelector {
     const stopUsage = () => {
       if (hasStopped) return
       hasStopped = true
-      this.dec(prevKey)
+      dec(prevKey)
       dependantUsages.forEach(([, stop]) => stop())
     }
 
     return [selector, stopUsage]
   }
 
-  inc(key) {
-    const count = this.usages.get(key) || 0
-    this.usages.set(key, count + 1)
+  result.clearCache = (recursive = true) => {
+    cache.clear()
+    usages.clear()
+    if (recursive) usableDependencies.forEach(x => x.clearCache())
   }
 
-  dec(key) {
-    const count = this.usages.get(key)
-    if (count === undefined) return
-    if (count === 1) this.cache.delete(key)
-    this.usages.set(key, count - 1)
-  }
+  return result
 }
 
 const getDependencies = args =>
@@ -119,9 +120,8 @@ export const createSelector = (...args) => {
   const [computeFn] = args.splice(-1)
   const dependencies = getDependencies(args)
   const keySelector = getKeySelector(dependencies)
-  return keySelector
-    ? new InstanceSelector(dependencies, computeFn, keySelector).compute
-    : getComputeFn(dependencies, computeFn)
+  const getSelector = keySelector ? getInstanceSelector : getComputeFn
+  return getSelector(dependencies, computeFn, keySelector)
 }
 
 export const createKeyedSelectorFactory = (...args) => {
@@ -130,12 +130,12 @@ export const createKeyedSelectorFactory = (...args) => {
   const cache = new Map()
   return selector => {
     const keySelector = createKeySelector(selector)
-    return new InstanceSelector(
+    return getInstanceSelector(
       [...dependencies, keySelector],
       computeFn,
       keySelector,
       cache
-    ).compute
+    )
   }
 }
 
@@ -145,7 +145,6 @@ export const createKeySelector = x => {
 }
 
 export const createStructuredSelector = obj => {
-  const dependencies = Object.values(obj)
   const keys = Object.keys(obj)
   const compute = (...vals) => {
     const res = {}
@@ -153,7 +152,7 @@ export const createStructuredSelector = obj => {
     return res
   }
   return createSelector(
-    dependencies,
+    Object.values(obj),
     compute
   )
 }
