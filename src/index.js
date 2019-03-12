@@ -50,8 +50,8 @@ const getComputeFn = (dependencies, computeFn, getCache) => {
   }
   resFn.recomputations = () => nComputations
   resFn.resetRecomputations = () => (nComputations = 0)
-  resFn.dependencies = dependencies;
-  resFn.resultFn = computeFn;
+  resFn.dependencies = dependencies
+  resFn.resultFn = computeFn
   return resFn
 }
 
