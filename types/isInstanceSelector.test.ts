@@ -16,7 +16,7 @@ const parametricSelector = createSelector(
 );
 
 if (isInstanceSelector(selector)) {
-  // $ExpectType OutputInstanceSelector<{ selectedContact: string; }, boolean>
+  // $ExpectType OutputInstanceSelector<{ selectedContact: string; }, boolean, (res1: string, res2: string) => boolean>
   selector;
 
   // $ExpectType [Selector<{ selectedContact: string; }, boolean>, () => void]
@@ -24,6 +24,6 @@ if (isInstanceSelector(selector)) {
 }
 
 if (isInstanceSelector(parametricSelector)) {
-  // $ExpectType OutputParametricInstanceSelector<{ selectedContact: string; }, PropsA, boolean>
+  // $ExpectType OutputParametricInstanceSelector<{ selectedContact: string; }, PropsA, boolean, (res1: string, res2: string) => boolean>
   parametricSelector;
 }
