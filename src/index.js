@@ -68,9 +68,6 @@ class InstanceSelector {
     })
     this.compute.keySelector = keySelector
     this.compute.use = this.use.bind(this)
-    if (process.env.NODE_ENV === 'test') {
-      this.compute.getCache = () => this.cache
-    }
     this.compute.clearCache = (recursive = true) => {
       this.cache.clear()
       this.usages.clear()

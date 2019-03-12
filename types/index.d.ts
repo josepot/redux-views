@@ -13,12 +13,10 @@ interface InstanceProps<S> {
 type OutputInstanceProps<S, R> = OutputProps & {
   use: () => [Selector<S, R>, () => void],
   clearCache: (recursive?: boolean) => void,
-  getCache?: () => Map<string, any>, // Only available on NODE_ENV=test
 };
 type OutputParametricInstanceProps<S, P, R> = OutputProps & {
   use: () => [ParametricSelector<S, P, R>, () => void],
   clearCache: (recursive?: boolean) => void,
-  getCache?: () => Map<string, any>, // Only available on NODE_ENV=test
 };
 interface ParametricInstanceProps<S, P> {
   keySelector: ParametricSelector<S, P, string>;
