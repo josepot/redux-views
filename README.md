@@ -154,7 +154,7 @@ const getJoinedUsers = createSelector(
 
 In this example, `getUserA` and `getUserB` are different "key-selectors" and `getJoinedUsers` depends on both of them... So, what key is going to use `getJoinedUsers` in order to store the results? Redux-Views will infer that for you, and will internally create a new "key selector" that is the combination of those 2 keys. Let's see it in action:
 
-```
+```js
 getUserComparisson(state, {idA: '1', idB: '2'})
 getUserComparisson(state, {idA: '3', idB: '4'})
 getUserComparisson(state, {idA: '2', idB: '1'})
