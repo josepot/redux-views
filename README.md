@@ -128,9 +128,9 @@ getIsUserLoading.recomputations() // => 3
 getUser.recomputations() // => 2
 ```
 
-Notice how `getUserInfo` and `getIsUserLoading` has increased by one the number of recomputations, cool! However, `getUser` has not increased its recomputations, right? That's because the part of the state that's relevant to `getUser` has not changed!
+Notice how `getUserInfo` and `getIsUserLoading` has increased the number of recomputations, cool! However, the recomputations of `getUser` remain the same, right? That's because the part of the state that is relevant to `getUser` has not changed.
 
-I know what you must be thinking: what happens when a selector depends on more than one different "key selector"?
+I know what you must be thinking: what happens when a selector depends on more than one different key-selector?
 
 I'm glad that you asked. Let's try it:
 
@@ -152,7 +152,7 @@ const getJoinedUsers = createSelector(
 )
 ```
 
-In this example, `getUserA` and `getUserB` are different "key-selectors" and `getJoinedUsers` depends on both of them... So, what key is going to use `getJoinedUsers` in order to store the results? Redux-Views will infer that for you, and will internally create a new "key selector" that is the combination of those 2 keys. Let's see it in action:
+In this example, `getUserA` and `getUserB` have different key-selectors and `getJoinedUsers` depends on both of them... So, what key is going to use `getJoinedUsers` in order to cache its results? Redux-Views will infer that, by creating a new key-selector that is the combination of those 2. Let's see it in action:
 
 ```js
 getUserComparisson(state, {idA: '1', idB: '2'})
@@ -174,7 +174,9 @@ Awesome! Right?
 
 So, what is that `createKeyedSelectorFactory` function for?
 
-Again, good question! In the previous example `getUserA` and `getUserB` are querying the same data, but they don't know that, so each selector has its own cache... Which is totally fine. However, It would make sense to have the 2 of them share the same cache behind the scenes. That would save memory and a few pointless recomputations. That is what `createKeyedSelectorFactory` is for:
+Great question!
+
+In the previous example `getUserA` and `getUserB` are querying the same data, but they don't know that. Therefore, each selector has its own cache. Which is totally fine. However, It would make sense to have the 2 of them share the same cache. That would save us memory and a few pointless recomputations. That is what `createKeyedSelectorFactory` is for:
 
 ```js
 const getUserSelectorFactory = createKeyedSelectorFactory(
@@ -185,7 +187,7 @@ const getUserA = getUserSelectorFactory((state, {idA}) => idA)
 const getUserB = getUserSelectorFactory((state, {idB}) => idB)
 ```
 
-If in the previous example we had defined `getUserA` and `getUserB` like in the snipped above, all selectors would have returned exactly the same data. However, there would have been a slightly difference when looking at the number of recomputations. They would look like this, instead:
+If in the previous example we had defined `getUserA` and `getUserB` like in the snipped above, then everything would have beheaved exactly the same. However, we would have noticed a small difference in the number of recomputations:
 
 ```js
 getUserComparisson.recomputations() // => 4
@@ -193,24 +195,24 @@ getUserA.recomputations() // => 2 (Yep, this is not a typo)
 getUserB.recomputations() // => 2 (Yep, this is not a typo)
 ```
 
-Why? Because both `getUserA` and `getUserB` are using the same cache. Let's go step by step and see what's happening. First we run: 
+Why? Because both `getUserA` and `getUserB` are sharing the same cache object. Let's analize it in slow motion. First we run: 
 
 ```js
 getUserComparisson(state, {idA: '1', idB: '2'})
 ```
-And now they have both been recomputed one time, but their shared cache has 2 different entries: one for `1` and another one for `2`. Then we ran the following:
+The cache was empty before, so neither `getUserA` nor `getUserB` found anything in the cache and they both got computed. After they got computed, though, they saved their results in their shared cache, so now that cache has 2 entries: `1` and `2`. Next line:
 
 ```js
 getUserComparisson(state, {idA: '3', idB: '4'})
 ```
 
-And again, they both have been recomputed one more time. However, now their shared cache now has 4 different entries (`1`, `2`, `3` and `4`). So, what happens when we run the next `getUserComparisson`?
+They both have been computed again because there were no entires in the cache for `3` and `4`. However, now their shared cache has now 4 different entries (`1`, `2`, `3` and `4`). So, what happens when we run the next `getUserComparisson`?
 
 ```js
 getUserComparisson(state, {idA: '2', idB: '1'})
 ```
 
-When `getUserA` checks the cache, it finds the entry for `2` and when `getUserB` checks the cache finds the entry for `1`, so they return those values and don't recalculate their compute function.
+When `getUserA` checks the cache, it finds the entry for `2` and when `getUserB` checks the cache finds the entry for `1`, so they return those values and don't evaluate their compute function.
 
 ## Cache invalidation
 
