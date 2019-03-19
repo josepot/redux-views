@@ -7,7 +7,7 @@ const getCombinedKeySelector = keySelectors => {
   if (!combinedKeySelectors[len]) combinedKeySelectors[len] = []
 
   const entry = combinedKeySelectors[len].find(([candidates]) =>
-    candidates.every(c => keySelectors.some(k => k === c))
+    candidates.every((fn, idx) => keySelectors[idx] === fn)
   )
 
   if (entry) return entry[1]
@@ -29,7 +29,7 @@ const getKeySelector = dependencies => {
   if (keySelectors.length === 0) return null
   return keySelectors.length === 1
     ? keySelectors[0]
-    : getCombinedKeySelector(keySelectors)
+    : getCombinedKeySelector(keySelectors.sort())
 }
 
 const getComputeFn = (dependencies, computeFn, getCache) => {
