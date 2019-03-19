@@ -251,3 +251,6 @@ const customConnect = (selector, ...rest) => Base => props => {
 ```
 
 - Use [`react-redux-lean`](https://github.com/josepot/react-redux-lean) instead of `react-redux`.
+
+## Credits to:
+- [@voliva](https://github.com/voliva/): For helping with the definition of the API and for adding the typings.
