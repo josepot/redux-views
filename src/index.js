@@ -130,8 +130,8 @@ export const createKeyedSelectorFactory = (...args) => {
   const [computeFn] = args.splice(-1)
   const dependencies = getDependencies(args)
   const cache = new Map()
-  return selector => {
-    const keySelector = createKeySelector(selector)
+  return fn => {
+    const keySelector = createKeySelector(fn)
     return getInstanceSelector(
       [...dependencies, keySelector],
       computeFn,
@@ -141,9 +141,10 @@ export const createKeyedSelectorFactory = (...args) => {
   }
 }
 
-export const createKeySelector = x => {
-  x.keySelector = x
-  return x
+export const createKeySelector = fn => {
+  const res = (s, ...args) => fn(...args)
+  res.keySelector = res
+  return res
 }
 
 export const createStructuredSelector = obj => {

@@ -51,8 +51,8 @@ describe('createKeyedSelectorFactory', () => {
       (users, key) => users[key]
     )
 
-    const getUserFrom = getUserFactory((s, { from }) => from)
-    const getUserTo = getUserFactory((s, { to }) => to)
+    const getUserFrom = getUserFactory(({ from }) => from)
+    const getUserTo = getUserFactory(({ to }) => to)
 
     expect(getUserFrom(state, { from: 1 })).toBe(state.users[1])
     expect(getUserFrom.recomputations()).toBe(1)
@@ -72,8 +72,8 @@ describe('keyed selectors', () => {
   let getFromProp, getToProp, getUserFrom, getUserTo, joinNames, getJoinedNames
 
   beforeEach(() => {
-    getFromProp = createKeySelector((state, { from }) => from)
-    getToProp = createKeySelector((state, { to }) => to)
+    getFromProp = createKeySelector(({ from }) => from)
+    getToProp = createKeySelector(({ to }) => to)
 
     getUserFrom = createSelector(
       [getFromProp, getUsers],
@@ -240,7 +240,7 @@ describe('keyed selectors', () => {
 
   describe('keySelector', () => {
     test('it should not create new keySelectors unless it is required', () => {
-      const propIdSelector = createKeySelector((state, { id }) => id)
+      const propIdSelector = createKeySelector(({ id }) => id)
 
       const isItemLoadingSelector = createSelector(
         [propIdSelector, () => ({})],
@@ -277,8 +277,8 @@ describe('keyed selectors', () => {
         getUsers,
         (users, key) => users[key]
       )
-      const getUserFrom = getUserFactory((s, { from }) => from)
-      const getUserTo = getUserFactory((s, { to }) => to)
+      const getUserFrom = getUserFactory(({ from }) => from)
+      const getUserTo = getUserFactory(({ to }) => to)
       const compareUsers = createSelector(
         [getUserFrom, getUserTo],
         () => null
