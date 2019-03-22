@@ -38,7 +38,7 @@ getUser.recomputations() // => 4
 
 ```js
 const getUsers = state => state.users
-const getPropId = createKeySelector((state, {id}) => id)
+const getPropId = createKeySelector(({id}) => id)
 
 const getUser = createSelector(
   [getUsers, getPropId],
@@ -55,14 +55,19 @@ getUser.recomputations() // => 2
 
 The only difference is that the second snipped uses `createKeySelector` in the declaration of `getPropId`.
 
-What `createKeySelector` does is to inform Redux-Views that the results of the given selector are the keys that should be used for identifying the results of those selectors that depend on it. In other words, it lets Redux-Views know how to properly memoize the descendant selectors that are created with `createSelector` or `createStructuredSelector`.
+`createKeySelector` takes a function that:
+- Receives all the parameters that are passed to the resulting selector __except for the state__
+- Must return the ID of the instance that consumes the resulting selector.
+And it returns a normal selector.
+
+Using this enhancer for generating key-selectors allows Redux-Views to understand the usages of the selectors that depend on them. In other words, using `createKeySelector` for creating selectors that return keys allows Redux-Views to optimally memoize the other selectors.
 
 For instance, consider this example:
 
 ```js
 const getUsers = state => state.users
 const getLoadingUsers = state => state.loadingUsers
-const getPropId = createKeySelector((state, {id}) => id)
+const getPropId = createKeySelector(({id}) => id)
 
 const getUser = createSelector(
   [getUsers, getPropId],
@@ -80,7 +85,7 @@ const getUserInfo = createStructuredSelector({
 })
 ```
 
-Both `getUsers` and `getIsUserLoading` depend on the same "key-selector": `getPropId`. Redux-Views has a way to know that the results of those selectors should be cached taking that key into account. On the other hand, `getuserInfo` depends on 2 different selectors that share the same "key-selector"; therefore `getUserInfo` will also use that same key-selector in order to cache its results. Lets see it:
+Both `getUsers` and `getIsUserLoading` depend on the same "key-selector": `getPropId`. Redux-Views has a way to know that the results of those selectors should be cached taking that key into account. On the other hand, `getuserInfo` depends on 2 different selectors that share the same "key-selector". Therefore, `getUserInfo` will also use that same key-selector in order to cache its results. Let's see it:
 
 ```js
 getUserInfo(state, {id: '1'})
@@ -94,7 +99,7 @@ getIsUserLoading.recomputations() // => 2
 getUser.recomputations() // => 2
 ```
 
-The state has not changed, and we have queried the same state using 2 different ids, that is why all the selectors have been computed only twice. Now, let us see what happens when we change the state in a way that does not affect the data of user "1" or user "2":
+The state has not changed, and we have queried the same state using 2 different IDs, that is why all the selectors have been computed only twice. Now, let's see what happens when we change the state in a way that does not affect the data of user "1" or user "2":
 
 ```js
 const newState = {
@@ -112,7 +117,7 @@ getUser.recomputations() // => 2
 
 Again, the same number of computations, because nothing relevant has changed, awesome!
 
-Now let us try making a relevant change, the loading status of user "2":
+Now let's try making a relevant change, the loading status of user "2":
 
 ```js
 const newState = {
@@ -128,7 +133,7 @@ getIsUserLoading.recomputations() // => 3
 getUser.recomputations() // => 2
 ```
 
-Notice how `getUserInfo` and `getIsUserLoading` have increased the number of recomputations, cool! However, the recomputations of `getUser` remain the same, right? That is because the part of the state that is relevant to `getUser` has not changed.
+Notice how `getUserInfo` and `getIsUserLoading` have increased the number of recomputations, cool! However, the recomputations of `getUser` remain the same, right? That's because the part of the state that's relevant to `getUser` has not changed.
 
 I know what you must be thinking: what happens when a selector depends on more than one different key-selector?
 
@@ -137,8 +142,8 @@ I'm glad that you asked. Let's try it:
 ```js
 const getUsers = state => state.users
 
-const getPropIdA = createKeySelector((state, {idA}) => idA)
-const getPropIdB = createKeySelector((state, {idB}) => idB)
+const getPropIdA = createKeySelector(({idA}) => idA)
+const getPropIdB = createKeySelector(({idB}) => idB)
 
 const userById = (users, id) => users[id]
 const getUserA = createSelector([getUsers, getPropIdA], userById)
@@ -183,8 +188,8 @@ const getUserSelectorFactory = createKeyedSelectorFactory(
   [getUsers],
   (users, id) => users[id]
 )
-const getUserA = getUserSelectorFactory((state, {idA}) => idA)
-const getUserB = getUserSelectorFactory((state, {idB}) => idB)
+const getUserA = getUserSelectorFactory(({idA}) => idA)
+const getUserB = getUserSelectorFactory(({idB}) => idB)
 ```
 
 If in the previous example we had defined `getUserA` and `getUserB` like in the snipped above, then everything would have beheaved exactly the same. However, we would have noticed a small difference in the number of recomputations:
@@ -231,7 +236,7 @@ On top of those, shared-selectors also expose the these functions:
 
 In order to leverage the `use` function returned by shared-selectors, you have 2 options:
 
-- Enhance the `connect` function of `react-redux`, something more or less like this:
+- Enhance the `connect` function of `react-redux`, something like this should do the job:
 
 ```js
 const customConnect = (selector, ...rest) => Base => props => {
