@@ -38,22 +38,21 @@ export function isInstanceSelector<S, P, R, C>(selector: OutputParametricSelecto
 /// createKeySelector ///
 /////////////////////////
 
-export interface CreateKeySelector {
-  <S>(keySelector: Selector<S, string>): InstanceSelector<S, string>;
-  <S, P>(keySelector: ParametricSelector<S, P, string>): ParametricInstanceSelector<S, P, string>;
+interface KeySelector<P> {
+  (props: P, ...args: any[]): string;
 }
-export const createKeySelector: CreateKeySelector;
+
+export function createKeySelector<P>(keySelector: KeySelector<P>): ParametricInstanceSelector<{}, P, string>;
 
 //////////////////////////////////
 /// createKeyedSelectorFactory ///
 //////////////////////////////////
 
-export interface KeyedSelectorFactory<S1, T> {
-  <S2>(keySelector: Selector<S2, string>): InstanceSelector<S1 & S2, T>;
-  <S2, P>(keySelector: ParametricSelector<S2, P, string>): ParametricInstanceSelector<S1 & S2, P, T>;
+export interface KeyedSelectorFactory<S, T> {
+  <P>(keySelector: KeySelector<P>): ParametricInstanceSelector<S, P, T>;
 }
-export interface ParametricKeyedSelectorFactory<S1, P1, T> {
-  <S2, P2>(keySelector: ParametricSelector<S2, P2, string>): ParametricInstanceSelector<S1 & S2, P1 & P2, T>;
+export interface ParametricKeyedSelectorFactory<S, P1, T> {
+  <P2>(keySelector: KeySelector<P2>): ParametricInstanceSelector<S, P1 & P2, T>;
 }
 
 export function createKeyedSelectorFactory<S1, R1, T>(
