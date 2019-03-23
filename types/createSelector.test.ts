@@ -1,6 +1,6 @@
-import { createSelector, OutputParametricSelector, OutputParametricInstanceSelector } from "redux-views";
+import { createSelector, OutputParametricSelector } from "redux-views";
 import { getSelectedContactId, getContactId, getContacts, getCompanies, getCompanyId, State, PropsA, PropsB } from "./test.types";
-import { selectedContactIdSelector, contactIdSelector } from "./createKeySelector.test";
+import { contactIdSelector } from "./createKeySelector.test";
 import { getContactById } from "./createKeySelectorFactory.test";
 
 const areEqual = <T>(a: T, b: T) => a === b;
@@ -23,20 +23,6 @@ createSelector(
   areEqual
 );
 
-// $ExpectType OutputSelector<{ selectedContact: string; }, boolean, (res1: string, res2: string) => boolean>
-createSelector(
-  getSelectedContactId,
-  selectedContactIdSelector,
-  areEqual
-);
-
-// $ExpectType OutputSelector<{ selectedContact: string; }, boolean, (res1: string, res2: string) => boolean>
-createSelector(
-  selectedContactIdSelector,
-  getSelectedContactId,
-  areEqual
-);
-
 // $ExpectType OutputParametricSelector<{ selectedContact: string; }, PropsA, boolean, (res1: string, res2: string) => boolean>
 createSelector(
   getSelectedContactId,
@@ -46,13 +32,6 @@ createSelector(
 // $ExpectType OutputParametricSelector<{ selectedContact: string; }, PropsA, boolean, (res1: string, res2: string) => boolean>
 createSelector(
   [getSelectedContactId, contactIdSelector],
-  areEqual
-);
-
-// $ExpectType OutputParametricSelector<{ selectedContact: string; }, PropsA, boolean, (res1: string, res2: string) => boolean>
-createSelector(
-  selectedContactIdSelector,
-  getContactId,
   areEqual
 );
 

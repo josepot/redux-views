@@ -1,8 +1,8 @@
 import { createKeySelector } from "redux-views";
-import { getSelectedContactId, getContactId } from "./test.types";
+import { PropsA, PropsB } from "./test.types";
 
-// $ExpectType InstanceSelector<{ selectedContact: string; }, string>
-export const selectedContactIdSelector = createKeySelector(getSelectedContactId);
+// $ExpectType ParametricInstanceSelector<{}, PropsA, string>
+export const contactIdSelector = createKeySelector(({ contactId }: PropsA) => contactId);
 
-// $ExpectType ParametricInstanceSelector<unknown, PropsA, string>
-export const contactIdSelector = createKeySelector(getContactId);
+// $ExpectType ParametricInstanceSelector<{}, PropsB, string>
+export const companyIdSelector = createKeySelector<PropsB>(({ companyId }) => companyId);
