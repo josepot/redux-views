@@ -1,5 +1,9 @@
-const getNewKeySelector = fns => (...args) =>
-  fns.map(fn => encodeURIComponent(fn(...args))).join('/')
+const getNewKeySelector = fns => {
+  const res = (...args) =>
+    fns.map(fn => encodeURIComponent(fn(...args))).join('/')
+  res.fns = fns
+  return res
+}
 
 const combinedKeySelectors = {}
 const getCombinedKeySelector = keySelectors => {
@@ -32,13 +36,17 @@ const getKeySelector = dependencies => {
     : getCombinedKeySelector(keySelectors.sort())
 }
 
-const getComputeFn = (dependencies, computeFn, getCache) => {
-  if (!getCache) getCache = () => new Array(2)
+const getComputeFn = (
+  dependencies,
+  computeFn,
+  keySelector,
+  getCache = () => new Array(2)
+) => {
   let nComputations = 0
-  const resFn = (...args) => {
-    const cache = getCache(...args)
+
+  const computeFnCached = (computeFnArgs, key) => {
+    const cache = getCache(key)
     const [prevArgs, prevRes] = cache
-    const computeFnArgs = dependencies.map(fn => fn(...args))
     if (prevArgs && computeFnArgs.every((val, idx) => val === prevArgs[idx])) {
       return prevRes
     }
@@ -48,10 +56,21 @@ const getComputeFn = (dependencies, computeFn, getCache) => {
     cache[1] = res
     return res
   }
+
+  const resFn = keySelector
+    ? (...args) =>
+        computeFnCached(
+          dependencies.map(fn => fn(...args)),
+          keySelector(...args)
+        )
+    : (...args) => computeFnCached(dependencies.map(fn => fn(...args)))
+
   resFn.recomputations = () => nComputations
   resFn.resetRecomputations = () => (nComputations = 0)
   resFn.dependencies = dependencies
   resFn.resultFn = computeFn
+  resFn.resultFnCached = computeFnCached
+  resFn.resultFnCached.recomputations = resFn.recomputations
   return resFn
 }
 
@@ -62,12 +81,8 @@ const getInstanceSelector = (
   cache = new Map()
 ) => {
   const usages = new Map()
-  const usableDependencies = dependencies.filter(d => d.use)
-  let latestKey
 
-  const result = getComputeFn(dependencies, computeFn, (...args) => {
-    const key = keySelector(...args)
-    latestKey = key
+  const result = getComputeFn(dependencies, computeFn, keySelector, key => {
     if (!cache.has(key)) cache.set(key, new Array(2))
     return cache.get(key)
   })
@@ -78,32 +93,32 @@ const getInstanceSelector = (
   const dec = key => {
     const count = usages.get(key)
     if (count === undefined) return
-    if (count === 1) cache.delete(key)
-    usages.set(key, count - 1)
+    if (count === 1) {
+      cache.delete(key)
+      usages.delete(key)
+    } else {
+      usages.set(key, count - 1)
+    }
   }
 
-  result.use = () => {
-    const dependantUsages = usableDependencies.map(x => x.use())
-    let prevKey
-    let hasStopped = false
-    const selector = (...args) => {
-      const res = result(...args)
-      const currentKey = latestKey
-      if (prevKey === currentKey) return res
-      dec(prevKey)
-      inc(currentKey)
-      dependantUsages.forEach(([s]) => s(...args))
-      prevKey = currentKey
-      return res
-    }
-    const stopUsage = () => {
-      if (hasStopped) return
-      hasStopped = true
-      dec(prevKey)
-      dependantUsages.forEach(([, stop]) => stop())
+  const usableDependencies = dependencies.filter(d => d.use)
+  result.use = key => {
+    inc(key)
+
+    let dependantUsages
+    if (keySelector.fns) {
+      const keys = key.split('/').map(decodeURIComponent)
+      dependantUsages = usableDependencies.map(x =>
+        x.use(keys[keySelector.fns.indexOf(x.keySelector)])
+      )
+    } else {
+      dependantUsages = usableDependencies.map(x => x.use(key))
     }
 
-    return [selector, stopUsage]
+    return () => {
+      dec(key)
+      dependantUsages.forEach(stop => stop())
+    }
   }
 
   result.clearCache = (recursive = true) => {

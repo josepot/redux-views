@@ -19,8 +19,8 @@ if (isInstanceSelector(selector)) {
   // $ExpectType OutputInstanceSelector<{ selectedContact: string; }, boolean, (res1: string, res2: string) => boolean>
   selector;
 
-  // $ExpectType [Selector<{ selectedContact: string; }, boolean>, () => void]
-  selector.use();
+  // $ExpectType () => void
+  selector.use('id1');
 }
 
 if (isInstanceSelector(parametricSelector)) {
