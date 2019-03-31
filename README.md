@@ -229,29 +229,27 @@ Just like reselect does, the selectors created with redux-views expose the follo
 On top of those, shared-selectors also expose the these functions:
 
 - `keySelector`: the selector that is being used in order to calculate the key of the instance that is consuming the selector.
-- `use`: a function that returns a tuple with 2 functions: 
-  - The selector to be consumed if you want redux-views to keep track of the ref-count usages of its cache.
-  - An function for unsubscribing. Any time that use returns a different tuple, the previous unsubscribe function should be invoked. Also, the latest one should be invoked on componentWillUnmount 
+- `use`: a function that receives the key of the instance that is using it (the result of computing `keySelector`) and returns a function for unsubscribing.
 - `clearCache`: if you don't want to handle cache-invalidation through ref-counts, you can manually clear the cache using this function. By default it recursively clears the cache of the also the cache of its dependencies. If you do not want to clear the cache recursively, use false as the first (and only) argument.
 
 In order to leverage the `use` function returned by shared-selectors, you have 2 options:
 
-- Enhance the `connect` function of `react-redux`, something like this should do the job:
+- Enhance the `connect` function of `react-redux`, something like this should do the job if are not using the `forwardRef` option:
 
 ```js
-const customConnect = (selector, ...rest) => Base => props => {
-  const [usableSelector, unsubscribe] = useMemo(
-    () => (selector && selector.use
-      ? selector.use()
-      : [selector, Function.prototype]),
-    [selector]
-  )
-  useEffect(() => unsubscribe, [unsubscribe])
-  const Component = useMemo(
-    () => connect(usableSelector, ...rest)(Base),
-    [selector, Base]
-  )
-  return <Component {...props} />
+const customConnect = (selector, ...rest) => {
+  const { keySelector, use } = selector || {}
+  return Base => {
+    const Component = connect(selector, ...rest)(Base);
+    return props => {
+      const key = useMemo(
+        () => keySelector ? keySelector(null, props) : undefined,
+        [keySelector, props]
+      );
+      useEffect(() => use && use(key), [use, key])
+      return <Component {...props} />;
+    }
+  }
 }
 ```
 

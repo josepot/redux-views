@@ -12,11 +12,11 @@ interface InstanceProps<S> {
   keySelector: Selector<S, string>;
 }
 type OutputInstanceProps<S, R, C> = OutputProps<C> & {
-  use: () => [Selector<S, R>, () => void],
+  use: (key: string) => () => void,
   clearCache: (recursive?: boolean) => void,
 };
 type OutputParametricInstanceProps<S, P, R, C> = OutputProps<C> & {
-  use: () => [ParametricSelector<S, P, R>, () => void],
+  use: (key: string) => () => void,
   clearCache: (recursive?: boolean) => void,
 };
 interface ParametricInstanceProps<S, P> {
