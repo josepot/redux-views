@@ -36,13 +36,13 @@ const getKeySelector = dependencies => {
     : getCombinedKeySelector(keySelectors.sort())
 }
 
-const getComputeFn = (
-  dependencies,
-  computeFn,
-  keySelector,
-  getCache = () => new Array(2)
-) => {
+const getComputeFn = (dependencies, computeFn, keySelector, getCache) => {
   let nComputations = 0
+
+  if (!getCache) {
+    const cache = new Array(2)
+    getCache = () => cache
+  }
 
   const computeFnCached = (computeFnArgs, key) => {
     const cache = getCache(key)
@@ -68,9 +68,9 @@ const getComputeFn = (
   resFn.recomputations = () => nComputations
   resFn.resetRecomputations = () => (nComputations = 0)
   resFn.dependencies = dependencies
-  resFn.resultFn = computeFn
-  resFn.resultFnCached = computeFnCached
-  resFn.resultFnCached.recomputations = resFn.recomputations
+  resFn.resultFunc = computeFn
+  resFn.resultFuncCached = computeFnCached
+  resFn.resultFuncCached.recomputations = resFn.recomputations
   return resFn
 }
 

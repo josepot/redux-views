@@ -39,6 +39,18 @@ describe('createSelector', () => {
       )
       expect(selector({ a: '3', b: '4' })).toEqual('34')
     })
+
+    test('should not recompute if its previous args have not changed', () => {
+      const selector = createSelector(
+        prop('a'),
+        prop('b'),
+        (a, b) => a + b
+      )
+      expect(selector({ a: '3', b: '4' })).toEqual('34')
+      expect(selector.recomputations()).toEqual(1)
+      expect(selector({ a: '3', b: '4' })).toEqual('34')
+      expect(selector.recomputations()).toEqual(1)
+    })
   })
 })
 
