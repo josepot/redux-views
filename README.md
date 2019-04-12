@@ -8,9 +8,9 @@ with shared selectors (almost) transparent for the user.
 
 The API of Redux-Views is almost identical to the API of `reselect`. Basically, it keeps `reselect`'s 2 high-level functions:
 - `createSelector` has the exact same signature.
-- `createStructureSelector` is identical to the one provided by `reselect`, except that it only accepts the first argument.
+- `createStructureSelector` is identical to the one provided by `reselect` except that it only accepts the first argument.
 
-On top of those 2 functions, Redux-Views adds 2 new functions: `createKeySelector` and `createKeyedSelectorFactory`, which help the library to identify those selectors that just return ids.
+On top of those 2 functions, Redux-Views adds 2 new functions: `createKeySelector` and `createKeyedSelectorFactory`, which help the library to identify those selectors that just return keys.
 
 Redux-Views also provides handy means for dealing with cache-invalidation. Its approach differs quite substantially from the one taken by `re-reselect`. Redux-Views prefferred approach consists of keeping an internal ref-count of the usages of a cache, in order to automatically clean it when those values are no longer needed.
 
@@ -53,7 +53,7 @@ getUser(state, {id: '2'})
 getUser.recomputations() // => 2
 ```
 
-The only difference is that the second snipped uses `createKeySelector` in the declaration of `getPropId`.
+The only difference is that the second snippet uses `createKeySelector` in the declaration of `getPropId`.
 
 `createKeySelector` takes a function that:
 - Receives all the parameters that are passed to the resulting selector __except for the state__
@@ -99,7 +99,7 @@ getIsUserLoading.recomputations() // => 2
 getUser.recomputations() // => 2
 ```
 
-The state has not changed, and we have queried the same state using 2 different IDs, that is why all the selectors have been computed only twice. Now, let's see what happens when we change the state in a way that does not affect the data of user "1" or user "2":
+The state has not changed and we have queried the same state using 2 different IDs. That is why all the selectors have been computed only twice. Now let's see what happens when we change the state in a way that does not affect the data of user "1" or user "2":
 
 ```js
 const newState = {
@@ -157,7 +157,7 @@ const getJoinedUsers = createSelector(
 )
 ```
 
-In this example, `getUserA` and `getUserB` have different key-selectors and `getJoinedUsers` depends on both of them. So, what key is going to use `getJoinedUsers` in order to cache its results? Redux-Views will infer that, by creating a new key-selector that is the combination of those 2. Let's see it in action:
+In this example, `getUserA` and `getUserB` have different key-selectors and `getJoinedUsers` depends on both of them. So, what key is going to use `getJoinedUsers` in order to cache its results? Redux-Views will infer that by creating a new key-selector that is the combination of those 2. Let's see it in action:
 
 ```js
 getJoinedUsers(state, {idA: '1', idB: '2'})
@@ -181,7 +181,7 @@ So, what is that `createKeyedSelectorFactory` function for?
 
 Great question!
 
-In the previous example `getUserA` and `getUserB` are querying the same data, but they don't know that. Therefore, each selector has its own cache. Which is totally fine. However, It could make sense to have the 2 of them share the same cache. That would save us memory and a few pointless recomputations. That is what `createKeyedSelectorFactory` is for:
+In the previous example `getUserA` and `getUserB` are querying the same data but they don't know that. Therefore, each selector has its own cache which is totally fine. However, it could make sense to have the 2 of them share the same cache. That would save us memory and a few pointless recomputations. That is what `createKeyedSelectorFactory` is for:
 
 ```js
 const getUserSelectorFactory = createKeyedSelectorFactory(
@@ -192,7 +192,7 @@ const getUserA = getUserSelectorFactory(({idA}) => idA)
 const getUserB = getUserSelectorFactory(({idB}) => idB)
 ```
 
-If in the previous example we had defined `getUserA` and `getUserB` like in the snipped above, then everything would have beheaved exactly the same. However, we would have noticed a small difference in the number of recomputations:
+If in the previous example we had defined `getUserA` and `getUserB` like in the snippet above, then everything would behave exactly the same. However, we would have noticed a small difference in the number of recomputations:
 
 ```js
 getJoinedUsers.recomputations() // => 4
@@ -200,7 +200,7 @@ getUserA.recomputations() // => 2 (Yep, this is not a typo)
 getUserB.recomputations() // => 2 (Yep, this is not a typo)
 ```
 
-Why? Because both `getUserA` and `getUserB` are sharing the same cache object. Let's analize it in slow motion. First we run: 
+Why? Because both `getUserA` and `getUserB` are sharing the same cache object. Let's analyse it in slow motion. First we run: 
 
 ```js
 getJoinedUsers(state, {idA: '1', idB: '2'})
@@ -219,18 +219,18 @@ getJoinedUsers(state, {idA: '2', idB: '1'})
 
 When `getUserA` checks the cache, it finds the entry for `2` and when `getUserB` checks the cache finds the entry for `1`, so they return those values and don't evaluate their compute function.
 
-## Cache invalidation
+## Cache Invalidation
 
-Just like reselect does, the selectors created with redux-views expose the following functions:
+Just like `reselect` does, the selectors created with redux-views expose the following functions:
 - `resultFunc`
 - `recomputations`
 - `resetRecomputations`
 
-On top of those, shared-selectors also expose the these functions:
+On top of those, shared-selectors also expose these functions:
 
 - `keySelector`: the selector that is being used in order to calculate the key of the instance that is consuming the selector.
 - `use`: a function that receives the key of the instance that is using it (the result of computing `keySelector`) and returns a function for unsubscribing.
-- `clearCache`: if you don't want to handle cache-invalidation through ref-counts, you can manually clear the cache using this function. By default it recursively clears the cache of the also the cache of its dependencies. If you do not want to clear the cache recursively, use false as the first (and only) argument.
+- `clearCache`: if you don't want to handle cache-invalidation through ref-counts, you can manually clear the cache using this function. By default it recursively clears the cache and also the cache of its dependencies. If you do not want to clear the cache recursively, use false as the first (and only) argument.
 
 In order to leverage the `use` function returned by shared-selectors, you have 2 options:
 
