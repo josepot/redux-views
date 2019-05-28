@@ -1,5 +1,5 @@
-import { prop } from 'ramda'
-import { createSelector, createKeySelector } from '../src'
+import { inc, prop } from 'ramda'
+import { createSelector, createKeySelector, createMapSelector } from '../src'
 
 const state = {
   users: {
@@ -47,6 +47,27 @@ describe('createSelector', () => {
       expect(selector({ a: '3', b: '4' })).toEqual('34')
       expect(selector.recomputations()).toEqual(1)
     })
+  })
+})
+
+describe('createMapSelector', () => {
+  const state = [0, 1, 2, 3, 4, 5]
+  const getId = createKeySelector(prop('id'))
+  const incId = createSelector(
+    getId,
+    inc
+  )
+  const idsSelector = s => s.map(id => ({ id }))
+  const getIncState = createMapSelector(idsSelector, incId)
+  test('it works', () => {
+    const expecteState = [1, 2, 3, 4, 5, 6]
+    expect(getIncState(state)).toEqual(expecteState)
+    expect(getIncState.recomputations()).toBe(1)
+    expect(getIncState([...state])).toEqual(expecteState)
+    expect(getIncState.recomputations()).toBe(1)
+    expect(() => {
+      createMapSelector(Function.prototype, idsSelector, inc)
+    }).toThrow()
   })
 })
 
