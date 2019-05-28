@@ -1,7 +1,6 @@
 import { createSelector, OutputParametricSelector } from "redux-views";
 import { getSelectedContactId, getContactId, getContacts, getCompanies, getCompanyId, State, PropsA, PropsB } from "./test.types";
 import { contactIdSelector } from "./createKeySelector.test";
-import { getContactById } from "./createKeySelectorFactory.test";
 
 const areEqual = <T>(a: T, b: T) => a === b;
 
@@ -58,18 +57,3 @@ const companyHasContact = createSelector(
 );
 // $ExpectType true
 type CHC_IS_RIGHT = typeof companyHasContact extends OutputParametricSelector<State, PropsA & PropsB, boolean, any> ? true : false;
-
-const inst_companyHasContact = createSelector(
-  getContactById,
-  getCompany,
-  (contact, company) => company.employees.indexOf(contact.name) >= 0
-);
-// $ExpectType true
-type ICHC_IS_RIGHT = typeof inst_companyHasContact extends OutputParametricSelector<State, PropsA & PropsB, boolean, any> ? true : false;
-
-const inst_arr_companyHasContact = createSelector(
-  [getContactById, getCompany],
-  (contact, company) => company.employees.indexOf(contact.name) >= 0
-);
-// $ExpectType true
-type IACHC_IS_RIGHT = typeof inst_arr_companyHasContact extends OutputParametricSelector<State, PropsA & PropsB, boolean, any> ? true : false;

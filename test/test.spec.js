@@ -1,9 +1,5 @@
 import { prop } from 'ramda'
-import {
-  createSelector,
-  createKeySelector,
-  createKeyedSelectorFactory
-} from '../src'
+import { createSelector, createKeySelector } from '../src'
 
 const state = {
   users: {
@@ -51,30 +47,6 @@ describe('createSelector', () => {
       expect(selector({ a: '3', b: '4' })).toEqual('34')
       expect(selector.recomputations()).toEqual(1)
     })
-  })
-})
-
-describe('createKeyedSelectorFactory', () => {
-  test('returns a factory of keyed-selectors with a shared cache', () => {
-    const getUserFactory = createKeyedSelectorFactory(
-      getUsers,
-      (users, key) => users[key]
-    )
-
-    const getUserFrom = getUserFactory(({ from }) => from.toString())
-    const getUserTo = getUserFactory(({ to }) => to.toString())
-
-    expect(getUserFrom(state, { from: 1 })).toBe(state.users[1])
-    expect(getUserFrom.recomputations()).toBe(1)
-    expect(getUserTo.recomputations()).toBe(0)
-
-    expect(getUserTo(state, { to: 1 })).toBe(state.users[1])
-    expect(getUserFrom.recomputations()).toBe(1)
-    expect(getUserTo.recomputations()).toBe(0)
-
-    expect(getUserTo(state, { to: 2 })).toBe(state.users[2])
-    expect(getUserTo.recomputations()).toBe(1)
-    expect(getUserFrom.recomputations()).toBe(1)
   })
 })
 
@@ -300,23 +272,6 @@ describe('keyed selectors', () => {
       expect(isItemSelectedSelector.keySelector).toBe(propIdSelector)
       expect(rawItemSelector.keySelector).toBe(propIdSelector)
       expect(itemSelector.keySelector).toBe(propIdSelector)
-    })
-
-    test('it should create new keySelectors when it is required', () => {
-      const getUserFactory = createKeyedSelectorFactory(
-        getUsers,
-        (users, key) => users[key]
-      )
-      const getUserFrom = getUserFactory(({ from }) => from.toString())
-      const getUserTo = getUserFactory(({ to }) => to.toString())
-      const compareUsers = createSelector(
-        [getUserFrom, getUserTo],
-        () => null
-      )
-
-      expect(getUserFrom.keySelector).not.toBe(getUserTo.keySelector)
-      expect(compareUsers.keySelector).not.toBe(getUserTo.keySelector)
-      expect(compareUsers.keySelector).not.toBe(getUserFrom.keySelector)
     })
   })
 })

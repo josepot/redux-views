@@ -10,7 +10,7 @@ The API of Redux-Views is almost identical to the API of `reselect`. Basically, 
 - `createSelector` has the exact same signature.
 - `createStructureSelector` is identical to the one provided by `reselect` except that it only accepts the first argument.
 
-On top of those 2 functions, Redux-Views adds 2 new functions: `createKeySelector` and `createKeyedSelectorFactory`, which help the library to identify those selectors that just return keys.
+On top of those 2 functions, Redux-Views adds a new function: `createKeySelector`, which helps the library to identify those selectors that just return keys.
 
 Redux-Views also provides handy means for dealing with cache-invalidation. Its approach differs quite substantially from the one taken by `re-reselect`. Redux-Views prefferred approach consists of keeping an internal ref-count of the usages of a cache, in order to automatically clean it when those values are no longer needed.
 
@@ -174,50 +174,6 @@ getJoinedUsers.recomputations() // => 4
 getUserA.recomputations() // => 4
 getUserB.recomputations() // => 4
 ```
-
-Awesome! Right?
-
-So, what is that `createKeyedSelectorFactory` function for?
-
-Great question!
-
-In the previous example `getUserA` and `getUserB` are querying the same data but they don't know that. Therefore, each selector has its own cache which is totally fine. However, it could make sense to have the 2 of them share the same cache. That would save us memory and a few pointless recomputations. That is what `createKeyedSelectorFactory` is for:
-
-```js
-const getUserSelectorFactory = createKeyedSelectorFactory(
-  [getUsers],
-  (users, id) => users[id]
-)
-const getUserA = getUserSelectorFactory(({idA}) => idA)
-const getUserB = getUserSelectorFactory(({idB}) => idB)
-```
-
-If in the previous example we had defined `getUserA` and `getUserB` like in the snippet above, then everything would behave exactly the same. However, we would have noticed a small difference in the number of recomputations:
-
-```js
-getJoinedUsers.recomputations() // => 4
-getUserA.recomputations() // => 2 (Yep, this is not a typo)
-getUserB.recomputations() // => 2 (Yep, this is not a typo)
-```
-
-Why? Because both `getUserA` and `getUserB` are sharing the same cache object. Let's analyse it in slow motion. First we run: 
-
-```js
-getJoinedUsers(state, {idA: '1', idB: '2'})
-```
-The cache was empty before, so neither `getUserA` nor `getUserB` found anything in the cache and they both got computed. After they got computed, though, they saved their results in their shared cache, so now that cache has 2 entries: `1` and `2`. Next line:
-
-```js
-getJoinedUsers(state, {idA: '3', idB: '4'})
-```
-
-They both have been computed again because there were no entries for `3` and `4`. However, that shared cache has now 4 different entries (`1`, `2`, `3` and `4`). So, what happens when we run the next `getJoinedUsers`?
-
-```js
-getJoinedUsers(state, {idA: '2', idB: '1'})
-```
-
-When `getUserA` checks the cache, it finds the entry for `2` and when `getUserB` checks the cache finds the entry for `1`, so they return those values and don't evaluate their compute function.
 
 ## Cache Invalidation
 
