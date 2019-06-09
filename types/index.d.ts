@@ -9,18 +9,18 @@ interface OutputProps<C> {
   resetRecomputations: () => number;
 }
 interface InstanceProps<S> {
-  keySelector: Selector<S, string>;
+  idSelector: Selector<S, string>;
 }
 type OutputInstanceProps<S, R, C> = OutputProps<C> & {
-  use: (key: string) => () => void,
+  use: (id: string) => () => void,
   clearCache: (recursive?: boolean) => void,
 };
 type OutputParametricInstanceProps<S, P, R, C> = OutputProps<C> & {
-  use: (key: string) => () => void,
+  use: (id: string) => () => void,
   clearCache: (recursive?: boolean) => void,
 };
 interface ParametricInstanceProps<S, P> {
-  keySelector: ParametricSelector<S, P, string>;
+  idSelector: ParametricSelector<S, P, string>;
 }
 
 export type OutputSelector<S, R, C> = Selector<S, R> & OutputProps<C>;
@@ -35,14 +35,14 @@ export function isInstanceSelector<S, R, C>(selector: OutputSelector<S, R, C>): 
 export function isInstanceSelector<S, P, R, C>(selector: OutputParametricSelector<S, P, R, C>): selector is OutputParametricInstanceSelector<S, P, R, C>;
 
 /////////////////////////
-/// createKeySelector ///
+/// createIdSelector ///
 /////////////////////////
 
-interface KeySelector<P> {
+interface IdSelector<P> {
   (props: P, ...args: any[]): string;
 }
 
-export function createKeySelector<P>(keySelector: KeySelector<P>): ParametricInstanceSelector<{}, P, string>;
+export function createIdSelector<P>(idSelector: IdSelector<P>): ParametricInstanceSelector<{}, P, string>;
 
 //////////////////////
 /// createSelector ///

@@ -1,4 +1,4 @@
 export { createSelector, createStructuredSelector } from './createSelector'
-export { createKeySelector } from './keySelector'
+export { createIdSelector } from './idSelector'
 export { default as createMapSelector } from './mapSelector'
-export const isInstanceSelector = sel => sel.keySelector && sel.use
+export const isInstanceSelector = sel => sel.idSelector && sel.use

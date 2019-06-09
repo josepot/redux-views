@@ -38,7 +38,7 @@ const map = (fn, target) => {
 }
 
 export default (idsSelector, itemSelector) => {
-  if (typeof itemSelector.keySelector !== 'function') throw new Error()
+  if (typeof itemSelector.idSelector !== 'function') throw new Error()
   const mapper = state => id =>
     itemSelector(state, ...(Array.isArray(id) ? id : [id]))
 

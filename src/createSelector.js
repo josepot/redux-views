@@ -1,6 +1,6 @@
-import { getKeySelector } from './keySelector'
+import { getIdSelector } from './idSelector'
 
-const getComputeFn = (dependencies, computeFn, keySelector, getCache) => {
+const getComputeFn = (dependencies, computeFn, idSelector, getCache) => {
   let nComputations = 0
 
   if (!getCache) {
@@ -8,8 +8,8 @@ const getComputeFn = (dependencies, computeFn, keySelector, getCache) => {
     getCache = () => cache
   }
 
-  const computeFnCached = (computeFnArgs, key) => {
-    const cache = getCache(key)
+  const computeFnCached = (computeFnArgs, id) => {
+    const cache = getCache(id)
     const [prevArgs, prevRes] = cache
     if (prevArgs && computeFnArgs.every((val, idx) => val === prevArgs[idx])) {
       return prevRes
@@ -21,11 +21,11 @@ const getComputeFn = (dependencies, computeFn, keySelector, getCache) => {
     return res
   }
 
-  const resFn = keySelector
+  const resFn = idSelector
     ? (...args) =>
         computeFnCached(
           dependencies.map(fn => fn(...args)),
-          keySelector(...args)
+          idSelector(...args)
         )
     : (...args) => computeFnCached(dependencies.map(fn => fn(...args)))
 
@@ -41,46 +41,46 @@ const getComputeFn = (dependencies, computeFn, keySelector, getCache) => {
 const getInstanceSelector = (
   dependencies,
   computeFn,
-  keySelector,
+  idSelector,
   cache = new Map()
 ) => {
   const usages = new Map()
 
-  const result = getComputeFn(dependencies, computeFn, keySelector, key => {
-    if (!cache.has(key)) cache.set(key, new Array(2))
-    return cache.get(key)
+  const result = getComputeFn(dependencies, computeFn, idSelector, id => {
+    if (!cache.has(id)) cache.set(id, new Array(2))
+    return cache.get(id)
   })
 
-  result.keySelector = keySelector
+  result.idSelector = idSelector
 
-  const inc = key => usages.set(key, (usages.get(key) || 0) + 1)
-  const dec = key => {
-    const count = usages.get(key)
+  const inc = id => usages.set(id, (usages.get(id) || 0) + 1)
+  const dec = id => {
+    const count = usages.get(id)
     if (count === undefined) return
     if (count === 1) {
-      cache.delete(key)
-      usages.delete(key)
+      cache.delete(id)
+      usages.delete(id)
     } else {
-      usages.set(key, count - 1)
+      usages.set(id, count - 1)
     }
   }
 
   const usableDependencies = dependencies.filter(d => d.use)
-  result.use = key => {
-    inc(key)
+  result.use = id => {
+    inc(id)
 
     let dependantUsages
-    if (keySelector.fns) {
-      const keys = key.split('/').map(decodeURIComponent)
+    if (idSelector.fns) {
+      const ids = id.split('/').map(decodeURIComponent)
       dependantUsages = usableDependencies.map(x =>
-        x.use(keys[keySelector.fns.indexOf(x.keySelector)])
+        x.use(ids[idSelector.fns.indexOf(x.idSelector)])
       )
     } else {
-      dependantUsages = usableDependencies.map(x => x.use(key))
+      dependantUsages = usableDependencies.map(x => x.use(id))
     }
 
     return () => {
-      dec(key)
+      dec(id)
       dependantUsages.forEach(stop => stop())
     }
   }
@@ -100,16 +100,16 @@ const getDependencies = args =>
 export const createSelector = (...args) => {
   const [computeFn] = args.splice(-1)
   const dependencies = getDependencies(args)
-  const keySelector = getKeySelector(dependencies)
-  const getSelector = keySelector ? getInstanceSelector : getComputeFn
-  return getSelector(dependencies, computeFn, keySelector)
+  const idSelector = getIdSelector(dependencies)
+  const getSelector = idSelector ? getInstanceSelector : getComputeFn
+  return getSelector(dependencies, computeFn, idSelector)
 }
 
 export const createStructuredSelector = obj => {
-  const keys = Object.keys(obj)
+  const ids = Object.ids(obj)
   const compute = (...vals) => {
     const res = {}
-    vals.forEach((val, idx) => (res[keys[idx]] = val))
+    vals.forEach((val, idx) => (res[ids[idx]] = val))
     return res
   }
   return createSelector(
