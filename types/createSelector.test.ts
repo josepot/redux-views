@@ -1,6 +1,6 @@
 import { createSelector, OutputParametricSelector } from "redux-views";
 import { getSelectedContactId, getContactId, getContacts, getCompanies, getCompanyId, State, PropsA, PropsB } from "./test.types";
-import { contactIdSelector } from "./createKeySelector.test";
+import { contactIdSelector } from "./createIdSelector.test";
 
 const areEqual = <T>(a: T, b: T) => a === b;
 

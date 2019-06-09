@@ -1,5 +1,5 @@
 import { inc, prop } from 'ramda'
-import { createSelector, createKeySelector, createMapSelector } from '../src'
+import { createSelector, createIdSelector, createMapSelector } from '../src'
 
 const state = {
   users: {
@@ -52,7 +52,7 @@ describe('createSelector', () => {
 
 describe('createMapSelector', () => {
   const state = [0, 1, 2, 3, 4, 5]
-  const getId = createKeySelector(prop('id'))
+  const getId = createIdSelector(prop('id'))
   const incId = createSelector(
     getId,
     inc
@@ -71,12 +71,12 @@ describe('createMapSelector', () => {
   })
 })
 
-describe('keyed selectors', () => {
+describe('id selectors', () => {
   let getFromProp, getToProp, getUserFrom, getUserTo, joinNames, getJoinedNames
 
   beforeEach(() => {
-    getFromProp = createKeySelector(({ from }) => from.toString())
-    getToProp = createKeySelector(({ to }) => to.toString())
+    getFromProp = createIdSelector(({ from }) => from.toString())
+    getToProp = createIdSelector(({ to }) => to.toString())
 
     getUserFrom = createSelector(
       [getFromProp, getUsers],
@@ -143,7 +143,7 @@ describe('keyed selectors', () => {
 
       let props1 = { from: 1, to: 2 }
       const stopUsage1 = getJoinedNames.use(
-        getJoinedNames.keySelector({}, props1)
+        getJoinedNames.idSelector({}, props1)
       )
       getJoinedNames(s, props1)
       expect(getJoinedNames.recomputations()).toBe(1)
@@ -152,7 +152,7 @@ describe('keyed selectors', () => {
 
       let props2 = { from: 1, to: 3 }
       const stopUsage2 = getJoinedNames.use(
-        getJoinedNames.keySelector({}, props2)
+        getJoinedNames.idSelector({}, props2)
       )
       getJoinedNames(s, props2)
       expect(getJoinedNames.recomputations()).toBe(2)
@@ -161,7 +161,7 @@ describe('keyed selectors', () => {
 
       let props3 = { from: 2, to: 4 }
       const stopUsage3 = getJoinedNames.use(
-        getJoinedNames.keySelector({}, props3)
+        getJoinedNames.idSelector({}, props3)
       )
       getJoinedNames(s, props3)
       expect(getJoinedNames.recomputations()).toBe(3)
@@ -261,9 +261,9 @@ describe('keyed selectors', () => {
     })
   })
 
-  describe('keySelector', () => {
-    test('it should not create new keySelectors unless it is required', () => {
-      const propIdSelector = createKeySelector(({ id }) => id.toString())
+  describe('idSelector', () => {
+    test('it should not create new idSelectors unless it is required', () => {
+      const propIdSelector = createIdSelector(({ id }) => id.toString())
 
       const isItemLoadingSelector = createSelector(
         [propIdSelector, () => ({})],
@@ -289,10 +289,10 @@ describe('keyed selectors', () => {
         })
       )
 
-      expect(isItemLoadingSelector.keySelector).toBe(propIdSelector)
-      expect(isItemSelectedSelector.keySelector).toBe(propIdSelector)
-      expect(rawItemSelector.keySelector).toBe(propIdSelector)
-      expect(itemSelector.keySelector).toBe(propIdSelector)
+      expect(isItemLoadingSelector.idSelector).toBe(propIdSelector)
+      expect(isItemSelectedSelector.idSelector).toBe(propIdSelector)
+      expect(rawItemSelector.idSelector).toBe(propIdSelector)
+      expect(itemSelector.idSelector).toBe(propIdSelector)
     })
   })
 })
