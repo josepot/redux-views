@@ -48,90 +48,95 @@ export function createIdSelector<P>(idSelector: IdSelector<P>): ParametricInstan
 /// createSelector ///
 //////////////////////
 
+interface SelectorCreator<TBase = any> {
+  /* one selector */
+  <S1, R1, T extends TBase>(
+    selector1: Selector<S1, R1>,
+    combiner: (res1: R1) => T,
+  ): OutputSelector<S1, T, (res1: R1) => T>;
+
+  <S1, P1, R1, T extends TBase>(
+    selector1: ParametricSelector<S1, P1, R1>,
+    combiner: (res1: R1) => T,
+  ): OutputParametricSelector<S1, P1, T, (res1: R1) => T>;
+
+  /* two selector */
+  <S1, S2, R1, R2, T extends TBase>(
+    selector1: Selector<S1, R1>,
+    selector2: Selector<S2, R2>,
+    combiner: (res1: R1, res2: R2) => T,
+  ): OutputSelector<S1 & S2, T, (res1: R1, res2: R2) => T>;
+
+  <S1, S2, P1, P2, R1, R2, T extends TBase>(
+    selector1: ParametricSelector<S1, P1, R1>,
+    selector2: ParametricSelector<S2, P2, R2>,
+    combiner: (res1: R1, res2: R2) => T,
+  ): OutputParametricSelector<S1 & S2, P1 & P2, T, (res1: R1, res2: R2) => T>;
+
+  /* three selector */
+  <S1, S2, S3, R1, R2, R3, T extends TBase>(
+    selector1: Selector<S1, R1>,
+    selector2: Selector<S2, R2>,
+    selector3: Selector<S3, R3>,
+    combiner: (res1: R1, res2: R2, res3: R3) => T,
+  ): OutputSelector<S1 & S2 & S3, T, (res1: R1, res2: R2, res3: R3) => T>;
+
+  <S1, S2, S3, P1, P2, P3, R1, R2, R3, T extends TBase>(
+    selector1: ParametricSelector<S1, P1, R1>,
+    selector2: ParametricSelector<S2, P2, R2>,
+    selector3: ParametricSelector<S3, P3, R3>,
+    combiner: (res1: R1, res2: R2, res3: R3) => T,
+  ): OutputParametricSelector<S1 & S2 & S3, P1 & P2 & P3, T, (res1: R1, res2: R2, res3: R3) => T>;
+
+  /* tuple argument */
+  /* one selector */
+  <S1, R1, T extends TBase>(
+    selectors: [Selector<S1, R1>],
+    combiner: (res1: R1) => T,
+  ): OutputSelector<S1, T, (res1: R1) => T>;
+
+  <S1, P1, R1, T extends TBase>(
+    selectors: [ParametricSelector<S1, P1, R1>],
+    combiner: (res1: R1) => T,
+  ): OutputParametricSelector<S1, P1, T, (res1: R1) => T>;
+
+  /* two selector */
+  <S1, S2, R1, R2, T extends TBase>(
+    selectors: [Selector<S1, R1>, Selector<S2, R2>],
+    combiner: (res1: R1, res2: R2) => T,
+  ): OutputSelector<S1 & S2, T, (res1: R1, res2: R2) => T>;
+
+  <S1, S2, P1, P2, R1, R2, T extends TBase>(
+    selectors: [ParametricSelector<S1, P1, R1>, ParametricSelector<S2, P2, R2>],
+    combiner: (res1: R1, res2: R2) => T,
+  ): OutputParametricSelector<S1 & S2, P1 & P2, T, (res1: R1, res2: R2) => T>;
+
+  /* three selector */
+  <S1, S2, S3, R1, R2, R3, T extends TBase>(
+    selectors: [Selector<S1, R1>, Selector<S2, R2>, Selector<S3, R3>],
+    combiner: (res1: R1, res2: R2, res3: R3) => T,
+  ): OutputSelector<S1 & S2 & S3, T, (res1: R1, res2: R2, res3: R3) => T>;
+
+  <S1, S2, S3, P1, P2, P3, R1, R2, R3, T extends TBase>(
+    selectors: [ParametricSelector<S1, P1, R1>, ParametricSelector<S2, P2, R2>, ParametricSelector<S3, P3, R3>],
+    combiner: (res1: R1, res2: R2, res3: R3) => T,
+  ): OutputParametricSelector<S1 & S2 & S3, P1 & P2 & P3, T, (res1: R1, res2: R2, res3: R3) => T>;
+
+  /* any number of uniform selectors */
+  <S, R, T extends TBase>(
+    selectors: Selector<S, R>[],
+    combiner: (...res: R[]) => T,
+  ): OutputSelector<S, T, (...res: R[]) => T>;
+  <S, P, R, T extends TBase>(
+    selectors: ParametricSelector<S, P, R>[],
+    combiner: (...res: R[]) => T,
+  ): OutputParametricSelector<S, P, T, (...res: R[]) => T>;
+}
+
 export { };
 
-/* one selector */
-export function createSelector<S1, R1, T>(
-  selector1: Selector<S1, R1>,
-  combiner: (res1: R1) => T,
-): OutputSelector<S1, T, (res1: R1) => T>;
-
-export function createSelector<S1, P1, R1, T>(
-  selector1: ParametricSelector<S1, P1, R1>,
-  combiner: (res1: R1) => T,
-): OutputParametricSelector<S1, P1, T, (res1: R1) => T>;
-
-/* two selector */
-export function createSelector<S1, S2, R1, R2, T>(
-  selector1: Selector<S1, R1>,
-  selector2: Selector<S2, R2>,
-  combiner: (res1: R1, res2: R2) => T,
-): OutputSelector<S1 & S2, T, (res1: R1, res2: R2) => T>;
-
-export function createSelector<S1, S2, P1, P2, R1, R2, T>(
-  selector1: ParametricSelector<S1, P1, R1>,
-  selector2: ParametricSelector<S2, P2, R2>,
-  combiner: (res1: R1, res2: R2) => T,
-): OutputParametricSelector<S1 & S2, P1 & P2, T, (res1: R1, res2: R2) => T>;
-
-/* three selector */
-export function createSelector<S1, S2, S3, R1, R2, R3, T>(
-  selector1: Selector<S1, R1>,
-  selector2: Selector<S2, R2>,
-  selector3: Selector<S3, R3>,
-  combiner: (res1: R1, res2: R2, res3: R3) => T,
-): OutputSelector<S1 & S2 & S3, T, (res1: R1, res2: R2, res3: R3) => T>;
-
-export function createSelector<S1, S2, S3, P1, P2, P3, R1, R2, R3, T>(
-  selector1: ParametricSelector<S1, P1, R1>,
-  selector2: ParametricSelector<S2, P2, R2>,
-  selector3: ParametricSelector<S3, P3, R3>,
-  combiner: (res1: R1, res2: R2, res3: R3) => T,
-): OutputParametricSelector<S1 & S2 & S3, P1 & P2 & P3, T, (res1: R1, res2: R2, res3: R3) => T>;
-
-/* tuple argument */
-/* one selector */
-export function createSelector<S1, R1, T>(
-  selectors: [Selector<S1, R1>],
-  combiner: (res1: R1) => T,
-): OutputSelector<S1, T, (res1: R1) => T>;
-
-export function createSelector<S1, P1, R1, T>(
-  selectors: [ParametricSelector<S1, P1, R1>],
-  combiner: (res1: R1) => T,
-): OutputParametricSelector<S1, P1, T, (res1: R1) => T>;
-
-/* two selector */
-export function createSelector<S1, S2, R1, R2, T>(
-  selectors: [Selector<S1, R1>, Selector<S2, R2>],
-  combiner: (res1: R1, res2: R2) => T,
-): OutputSelector<S1 & S2, T, (res1: R1, res2: R2) => T>;
-
-export function createSelector<S1, S2, P1, P2, R1, R2, T>(
-  selectors: [ParametricSelector<S1, P1, R1>, ParametricSelector<S2, P2, R2>],
-  combiner: (res1: R1, res2: R2) => T,
-): OutputParametricSelector<S1 & S2, P1 & P2, T, (res1: R1, res2: R2) => T>;
-
-/* three selector */
-export function createSelector<S1, S2, S3, R1, R2, R3, T>(
-  selectors: [Selector<S1, R1>, Selector<S2, R2>, Selector<S3, R3>],
-  combiner: (res1: R1, res2: R2, res3: R3) => T,
-): OutputSelector<S1 & S2 & S3, T, (res1: R1, res2: R2, res3: R3) => T>;
-
-export function createSelector<S1, S2, S3, P1, P2, P3, R1, R2, R3, T>(
-  selectors: [ParametricSelector<S1, P1, R1>, ParametricSelector<S2, P2, R2>, ParametricSelector<S3, P3, R3>],
-  combiner: (res1: R1, res2: R2, res3: R3) => T,
-): OutputParametricSelector<S1 & S2 & S3, P1 & P2 & P3, T, (res1: R1, res2: R2, res3: R3) => T>;
-
-/* any number of uniform selectors */
-export function createSelector<S, R, T>(
-  selectors: Selector<S, R>[],
-  combiner: (...res: R[]) => T,
-): OutputSelector<S, T, (...res: R[]) => T>;
-export function createSelector<S, P, R, T>(
-  selectors: ParametricSelector<S, P, R>[],
-  combiner: (...res: R[]) => T,
-): OutputParametricSelector<S, P, T, (...res: R[]) => T>;
+export const createSelector: SelectorCreator;
+export const createCollectionSelector: SelectorCreator<object>;
 
 ////////////////////////////////
 /// createStructuredSelector ///
