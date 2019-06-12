@@ -1,12 +1,9 @@
 import { createCollectionSelector, OutputParametricSelector } from "redux-views";
-import { getContactId, getContacts, getSelectedContactId, PropsA, PropsB, State, Contact } from "./test.types";
+import { Contact, getContactId, getContacts, getSelectedContactId, PropsA, State } from "./test.types";
 
 const areEqual = <T>(a: T, b: T) => a === b;
 
-/////////////////////////////////
-/// Doesn't accept primitives ///
-/////////////////////////////////
-
+// Doesn't accept primitives
 createCollectionSelector(
   getSelectedContactId,
   getSelectedContactId,
@@ -14,7 +11,14 @@ createCollectionSelector(
   areEqual
 );
 
-// Non-instance selectors
+// Accepts arrays
+createCollectionSelector(
+  getSelectedContactId,
+  getSelectedContactId,
+  (id1, id2) => [id1, id2]
+);
+
+// The selector yields the correct types
 const getContact = createCollectionSelector(
   getContacts,
   getContactId,
