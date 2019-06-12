@@ -1,6 +1,51 @@
-import { getIdSelector } from './idSelector'
+const identity = x => x
+const ofIdentity = [identity]
 
-const getComputeFn = (dependencies, computeFn, idSelector, getCache) => {
+const getNewIdSelector = fns => {
+  const res = (...args) =>
+    fns.map(fn => encodeURIComponent(fn(...args))).join('/')
+  res.fns = fns
+  res.idSelector = res
+  return res
+}
+
+const combinedIdSelectors = {}
+const getCombinedIdSelector = idSelectors => {
+  const len = idSelectors.length
+  if (!combinedIdSelectors[len]) combinedIdSelectors[len] = []
+
+  const entry = combinedIdSelectors[len].find(([candidates]) =>
+    candidates.every((fn, idx) => idSelectors[idx] === fn)
+  )
+
+  if (entry) return entry[1]
+
+  const fn = getNewIdSelector(idSelectors)
+  combinedIdSelectors[len].push([idSelectors, fn])
+  return fn
+}
+
+const getIdSelector = dependencies => {
+  const sortedIdSelectors = dependencies
+    .map(d => d.idSelector)
+    .filter(Boolean)
+    .sort()
+
+  const uniqIdSelectors = []
+  let prevIdSelector
+  sortedIdSelectors.forEach(idSelector => {
+    if (idSelector !== prevIdSelector) uniqIdSelectors.push(idSelector)
+    prevIdSelector = idSelector
+  })
+
+  if (uniqIdSelectors.length === 0) return null
+  return uniqIdSelectors.length === 1
+    ? uniqIdSelectors[0]
+    : getCombinedIdSelector(uniqIdSelectors)
+}
+
+const getComputeFn = (dependencies_, computeFn, idSelector, getCache) => {
+  const dependencies = dependencies_.length > 0 ? dependencies_ : ofIdentity
   let nComputations = 0
 
   if (!getCache) {
@@ -97,23 +142,12 @@ const getInstanceSelector = (
 const getDependencies = args =>
   args.length === 1 && Array.isArray(args[0]) ? args[0] : args
 
-export const createSelector = (...args) => {
-  const [computeFn] = args.splice(-1)
+export const createSelectorCreator = computeFnEnhancer => (...args) => {
+  const computeFn = computeFnEnhancer(args.splice(-1)[0])
   const dependencies = getDependencies(args)
   const idSelector = getIdSelector(dependencies)
   const getSelector = idSelector ? getInstanceSelector : getComputeFn
   return getSelector(dependencies, computeFn, idSelector)
 }
 
-export const createStructuredSelector = obj => {
-  const ids = Object.ids(obj)
-  const compute = (...vals) => {
-    const res = {}
-    vals.forEach((val, idx) => (res[ids[idx]] = val))
-    return res
-  }
-  return createSelector(
-    Object.values(obj),
-    compute
-  )
-}
+export default createSelectorCreator(identity)
