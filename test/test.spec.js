@@ -1,5 +1,10 @@
-import { inc, prop } from 'ramda'
-import { createSelector, createIdSelector, createMapSelector } from '../src'
+import { assocPath, prop, filter } from 'ramda'
+import {
+  createSelector,
+  createIdSelector,
+  createCollectionSelector,
+  createSwitchSelector
+} from '../src'
 
 const state = {
   users: {
@@ -48,26 +53,64 @@ describe('createSelector', () => {
       expect(selector.recomputations()).toEqual(1)
     })
   })
+
+  describe('it works with no dependencies', () => {
+    test('compute fn receives the state', () => {
+      const selector = createSelector(x => x)
+      expect(selector(1)).toEqual(1)
+    })
+  })
 })
 
-describe('createMapSelector', () => {
-  const state = [0, 1, 2, 3, 4, 5]
+describe('createCollectionSelector', () => {
+  const state = {
+    users: {
+      id1: { id: 'id1', age: 15, name: 'John' },
+      id2: { id: 'id2', age: 18, name: 'David' },
+      id3: { id: 'id3', age: 19, name: 'Liz' },
+      id4: { id: 'id4', age: 20, name: 'Eva' },
+      id5: { id: 'id5', age: 12, name: 'Carles' },
+      id6: { id: 'id6', age: 24, name: 'Joe' }
+    },
+    ids: ['id1', 'id2', 'id3', 'id4', 'id5', 'id6']
+  }
   const getId = createIdSelector(prop('id'))
-  const incId = createSelector(
-    getId,
-    inc
+  const getUsers = prop('users')
+  const getUserIds = prop('ids')
+  const getUser = createSelector(
+    [getId, getUsers],
+    prop
   )
-  const idsSelector = s => s.map(id => ({ id }))
-  const getIncState = createMapSelector(idsSelector, incId)
-  test('it works', () => {
-    const expecteState = [1, 2, 3, 4, 5, 6]
-    expect(getIncState(state)).toEqual(expecteState)
-    expect(getIncState.recomputations()).toBe(1)
-    expect(getIncState([...state])).toEqual(expecteState)
-    expect(getIncState.recomputations()).toBe(1)
-    expect(() => {
-      createMapSelector(Function.prototype, idsSelector, inc)
-    }).toThrow()
+  const getUserAge = createSelector(
+    getUser,
+    prop('age')
+  )
+
+  const getUsersList = createCollectionSelector(state =>
+    getUserIds(state).map(id => getUserAge(state, { id }))
+  )
+
+  const getUsersUnderAge = createCollectionSelector(
+    getUsersList,
+    filter(age => age < 18)
+  )
+
+  test('it works with no dependencies', () => {
+    expect(getUsersList(state)).toEqual(
+      Object.values(state.users).map(prop('age'))
+    )
+  })
+
+  test('it does not return a new value unless the return collection has changed', () => {
+    const initialResult = getUsersUnderAge(state)
+    expect(initialResult).toEqual([15, 12])
+    expect(getUsersUnderAge(state)).toBe(initialResult)
+
+    let newState = assocPath(['users', 'id2', 'age'], 19, state)
+    expect(getUsersUnderAge(newState)).toBe(initialResult)
+
+    newState = assocPath(['users', 'id2', 'age'], 17, state)
+    expect(getUsersUnderAge(newState)).toEqual([15, 17, 12])
   })
 })
 
