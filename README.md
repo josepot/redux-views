@@ -182,34 +182,25 @@ Just like `reselect` does, the selectors created with redux-views expose the fol
 - `recomputations`
 - `resetRecomputations`
 
-On top of those, shared-selectors also expose these functions:
+On top of those, redux-views also expose these functions:
 
 - `idSelector`: the selector that is being used in order to calculate the id of the instance that is consuming the selector.
 - `use`: a function that receives the id of the instance that is using it (the result of computing `idSelector`) and returns a function for unsubscribing.
 - `clearCache`: if you don't want to handle cache-invalidation through ref-counts, you can manually clear the cache using this function. By default it recursively clears the cache and also the cache of its dependencies. If you do not want to clear the cache recursively, use false as the first (and only) argument.
 
-In order to leverage the `use` function returned by shared-selectors, you have 2 options:
-
-- Enhance the `connect` function of `react-redux`, something like this should do the job if are not using the `forwardRef` option:
+In order to leverage the `use` function you could use a custom hook:
 
 ```js
-const customConnect = (selector, ...rest) => {
-  const { idSelector, use } = selector || {}
-  return Base => {
-    const Component = connect(selector, ...rest)(Base);
-    return props => {
-      const id = useMemo(
-        () => idSelector ? idSelector(null, props) : undefined,
-        [idSelector, props]
-      );
-      useEffect(() => use && use(id), [use, id])
-      return <Component {...props} />;
-    }
-  }
+const usePropsSelector = (pSelector, props) => {
+  const { idSelector, use } = pSelector
+
+  const id = idSelector && idSelector(null, props)
+  const selector = useCallback(x => pSelector(x, props), [pSelector, id])
+  useEffect(() => use && use(id), [use, id])
+
+  return useSelector(selector);
 }
 ```
-
-- Use [`react-redux-lean`](https://github.com/josepot/react-redux-lean) instead of `react-redux`.
 
 ## Credits to:
 - [@voliva](https://github.com/voliva/): For helping with the definition of the API and for adding the typings.
