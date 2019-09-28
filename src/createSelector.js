@@ -1,5 +1,4 @@
-const identity = x => x
-const ofIdentity = [identity]
+const ofIdentity = [x => x]
 
 const getNewIdSelector = fns => {
   const res = (...args) =>
@@ -44,69 +43,58 @@ const getIdSelector = dependencies => {
     : getCombinedIdSelector(uniqIdSelectors)
 }
 
-const getComputeFn = (dependencies_, computeFn, idSelector, getCache) => {
+const getComputeFn = (dependencies_, computeFn, equalityFn, getCache) => {
   const dependencies = dependencies_.length > 0 ? dependencies_ : ofIdentity
   let nComputations = 0
 
-  if (!getCache) {
-    const cache = new Array(2)
-    getCache = () => cache
-  }
-
-  const computeFnCached = (computeFnArgs, id) => {
-    const cache = getCache(id)
+  const resFn = (...args) => {
+    const cache = getCache(...args)
     const [prevArgs, prevRes] = cache
-    if (prevArgs && computeFnArgs.every((val, idx) => val === prevArgs[idx])) {
+    const computedArgs = dependencies.map(fn => fn(...args))
+    if (prevArgs && computedArgs.every((val, idx) => val === prevArgs[idx])) {
       return prevRes
     }
+    cache[0] = computedArgs
+    const res = computeFn(...computedArgs)
     nComputations++
-    const res = computeFn(...computeFnArgs)
-    cache[0] = computeFnArgs
-    cache[1] = res
-    return res
+    return (cache[1] = equalityFn && equalityFn(res, prevRes) ? prevRes : res)
   }
-
-  const resFn = idSelector
-    ? (...args) =>
-        computeFnCached(
-          dependencies.map(fn => fn(...args)),
-          idSelector(...args)
-        )
-    : (...args) => computeFnCached(dependencies.map(fn => fn(...args)))
 
   resFn.recomputations = () => nComputations
   resFn.resetRecomputations = () => (nComputations = 0)
   resFn.dependencies = dependencies
   resFn.resultFunc = computeFn
-  resFn.resultFuncCached = computeFnCached
-  resFn.resultFuncCached.recomputations = resFn.recomputations
   return resFn
 }
 
 const getInstanceSelector = (
   dependencies,
   computeFn,
-  idSelector,
-  cache = new Map()
+  equalityFn,
+  idSelector
 ) => {
-  const usages = new Map()
+  let cache = {}
+  let usages = {}
 
-  const result = getComputeFn(dependencies, computeFn, idSelector, id => {
-    if (!cache.has(id)) cache.set(id, new Array(2))
-    return cache.get(id)
-  })
+  const result = getComputeFn(
+    dependencies,
+    computeFn,
+    equalityFn,
+    (...args) => {
+      const id = idSelector(...args)
+      return cache[id] || (cache[id] = new Array(2))
+    }
+  )
 
   result.idSelector = idSelector
 
-  const inc = id => usages.set(id, (usages.get(id) || 0) + 1)
+  const inc = id => (usages[id] = (usages[id] || 0) + 1)
   const dec = id => {
-    const count = usages.get(id)
-    if (count === undefined) return
-    if (count === 1) {
-      cache.delete(id)
-      usages.delete(id)
+    if (usages[id] > 1) {
+      usages[id]--
     } else {
-      usages.set(id, count - 1)
+      delete cache[id]
+      delete usages[id]
     }
   }
 
@@ -131,23 +119,21 @@ const getInstanceSelector = (
   }
 
   result.clearCache = (recursive = true) => {
-    cache.clear()
-    usages.clear()
+    cache = {}
+    usages = {}
     if (recursive) usableDependencies.forEach(x => x.clearCache())
   }
 
   return result
 }
 
-const getDependencies = args =>
-  args.length === 1 && Array.isArray(args[0]) ? args[0] : args
-
-export const createSelectorCreator = computeFnEnhancer => (...args) => {
-  const computeFn = computeFnEnhancer(args.splice(-1)[0])
-  const dependencies = getDependencies(args)
+const createSelector = (dependencies, computeFn, equalityFn) => {
   const idSelector = getIdSelector(dependencies)
-  const getSelector = idSelector ? getInstanceSelector : getComputeFn
-  return getSelector(dependencies, computeFn, idSelector)
+  if (idSelector) {
+    return getInstanceSelector(dependencies, computeFn, equalityFn, idSelector)
+  }
+  const cache = new Array(2)
+  return getComputeFn(dependencies, computeFn, equalityFn, () => cache)
 }
 
-export default createSelectorCreator(identity)
+export default createSelector
