@@ -1,10 +1,33 @@
 import { assocPath, prop, filter } from 'ramda'
-import {
-  createSelector,
-  createIdSelector,
-  createCollectionSelector,
-  createSwitchSelector
-} from '../src'
+import { createSelector, createIdSelector } from '../src'
+
+const hasOwn = Object.prototype.hasOwnProperty
+
+function shallowEqual(objA, objB) {
+  if (objA === objB) return true
+
+  if (
+    typeof objA !== 'object' ||
+    objA === null ||
+    typeof objB !== 'object' ||
+    objB === null
+  ) {
+    return false
+  }
+
+  const keysA = Object.keys(objA)
+  const keysB = Object.keys(objB)
+
+  if (keysA.length !== keysB.length) return false
+
+  for (let i = 0; i < keysA.length; i++) {
+    if (!hasOwn.call(objB, keysA[i]) || objA[keysA[i]] !== objB[keysA[i]]) {
+      return false
+    }
+  }
+
+  return true
+}
 
 const state = {
   users: {
@@ -24,40 +47,24 @@ const getUsers = prop('users')
 
 describe('createSelector', () => {
   describe('computes dependant function', () => {
-    test('dependencies can be grouped in an Array', () => {
+    test('it works', () => {
       const selector = createSelector(
         [prop('a'), prop('b')],
         (a, b) => a + b
       )
       expect(selector({ a: '3', b: '4' })).toEqual('34')
-    })
-
-    test('dependencies do not have to be grouped in an Array', () => {
-      const selector = createSelector(
-        prop('a'),
-        prop('b'),
-        (a, b) => a + b
-      )
-      expect(selector({ a: '3', b: '4' })).toEqual('34')
+      expect(selector({ a: 3, b: 4 })).toEqual(7)
     })
 
     test('should not recompute if its previous args have not changed', () => {
       const selector = createSelector(
-        prop('a'),
-        prop('b'),
+        [prop('a'), prop('b')],
         (a, b) => a + b
       )
       expect(selector({ a: '3', b: '4' })).toEqual('34')
       expect(selector.recomputations()).toEqual(1)
       expect(selector({ a: '3', b: '4' })).toEqual('34')
       expect(selector.recomputations()).toEqual(1)
-    })
-  })
-
-  describe('it works with no dependencies', () => {
-    test('compute fn receives the state', () => {
-      const selector = createSelector(x => x)
-      expect(selector(1)).toEqual(1)
     })
   })
 })
@@ -82,24 +89,21 @@ describe('createCollectionSelector', () => {
     prop
   )
   const getUserAge = createSelector(
-    getUser,
+    [getUser],
     prop('age')
   )
 
-  const getUsersList = createCollectionSelector(state =>
-    getUserIds(state).map(id => getUserAge(state, { id }))
+  const getUsersList = createSelector(
+    [],
+    state => getUserIds(state).map(id => getUserAge(state, { id })),
+    shallowEqual
   )
 
-  const getUsersUnderAge = createCollectionSelector(
-    getUsersList,
-    filter(age => age < 18)
+  const getUsersUnderAge = createSelector(
+    [getUsersList],
+    filter(age => age < 18),
+    shallowEqual
   )
-
-  test('it works with no dependencies', () => {
-    expect(getUsersList(state)).toEqual(
-      Object.values(state.users).map(prop('age'))
-    )
-  })
 
   test('it does not return a new value unless the return collection has changed', () => {
     const initialResult = getUsersUnderAge(state)
