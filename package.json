@@ -32,7 +32,7 @@
     "test:watch": "npm test -- --watch",
     "test:cov": "npm test -- --coverage",
     "test:types": "dtslint types",
-    "build": "rollup -c",
+    "build": "cross-env NODE_ENV=production rollup -c",
     "prepare": "npm run clean && npm run format:check && npm run lint && npm test"
   },
   "dependencies": {
