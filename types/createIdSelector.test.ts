@@ -1,8 +1,8 @@
 import { createIdSelector } from "redux-views";
 import { PropsA, PropsB } from "./test.types";
 
-// $ExpectType ParametricInstanceSelector<{}, PropsA, string>
+// $ExpectType ParametricSelector<{}, PropsA, string>
 export const contactIdSelector = createIdSelector(({ contactId }: PropsA) => contactId);
 
-// $ExpectType ParametricInstanceSelector<{}, PropsB, string>
+// $ExpectType ParametricSelector<{}, PropsB, string>
 export const companyIdSelector = createIdSelector<PropsB>(({ companyId }) => companyId);
