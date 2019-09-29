@@ -1,5 +1,8 @@
 {
-  "extends": "dtslint/dtslint.json",
+  "extends": [
+    "dtslint/dtslint.json",
+    "tslint-config-prettier"
+  ],
   "rules": {
     "array-type": false,
     "unified-signatures": false
