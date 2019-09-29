@@ -1,33 +1,42 @@
 export interface Contact {
-  name: string;
+  name: string
 }
 
 export interface Company {
-  employees: Array<string>;
+  employees: Array<string>
 }
 
 export interface State {
   contacts: {
     [key: string]: Contact
-  };
+  }
   companies: {
     [key: string]: Company
-  };
-  selectedContact: string;
+  }
+  selectedContact: string
 }
 
 export interface PropsA {
-  contactId: string;
+  contactId: string
 }
 export interface PropsB {
-  companyId: string;
+  companyId: string
 }
 
-export const getContactId = (_: unknown, { contactId }: PropsA) => contactId;
-export const getSelectedContactId = ({ selectedContact }: { selectedContact: State['selectedContact'] }) => selectedContact;
-export const getContacts = ({ contacts }: { contacts: State['contacts'] }) => contacts;
+export const getContactId = (_: unknown, { contactId }: PropsA) => contactId
+export const getSelectedContactId = ({
+  selectedContact
+}: {
+  selectedContact: State['selectedContact']
+}) => selectedContact
+export const getContacts = ({ contacts }: { contacts: State['contacts'] }) =>
+  contacts
 
-export const getCompanyId = (_: unknown, { companyId }: PropsB) => companyId;
-export const getCompanies = ({ companies }: { companies: State['companies'] }) => companies;
+export const getCompanyId = (_: unknown, { companyId }: PropsB) => companyId
+export const getCompanies = ({
+  companies
+}: {
+  companies: State['companies']
+}) => companies
 
-export const state: State = null as any;
+export const state: State = null as any
