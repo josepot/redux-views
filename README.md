@@ -92,6 +92,8 @@ This way, `redux-views` knows that `getRunningCarPassengers` will probably give 
 
 It's good to know that, by default, `redux-views` will keep those memoized values for as long as the application runs. However, it provides two ways of clearing the cache, either manually or with a ref count which automatically clears the cache when the selector is not used anymore. This is something internal and rarely used for individual projects, as it's meant for bindings with state management libraries.
 
+If you're using a binding that supports ref count, you most likely don't need to worry about invalidating the cache.
+
 ## Migrating from reselect@4.0
 
 This version of `redux-views` removes the variadic overload of `createSelector` from `reselect@4.0`, which means that all calls that were using this overload will need to be changed. For example:
@@ -190,4 +192,104 @@ And we don't need to define any keySelector for every other selector we want to 
 
 ## API
 
-TODO
+### createSelector
+
+```ts
+function createSelector<T, R>(
+  selectors: Array<Selector<R>>,
+  combiner: (...res: Array<R>) => T,
+  equalityFn?: (a: T, b: T) => boolean
+): Selector<T>;
+```
+
+Creates a new selector by combining other selectors. Parameters:
+
+* selectors: List of input selectors
+* combiner: Computing function. Receives through arguments the result of the input selectors (in the same order as they are defined)
+* equalityFn: Optional function that checks whether two values returned by `combiner` are equal. Defaults to strict equality (`===`).
+
+### createIdSelector
+
+```ts
+function createIdSelector(
+  idSelector: (...props: Array) => string
+): Selector<string>;
+```
+
+Creates a selector from props. Parameters:
+
+* idSelector: Function that should return a string representing the id.
+
+### createStructuredSelector
+
+```ts
+export function createStructuredSelector<T>(
+  selectors: Dictionary<Selector<T>>
+): Selector<Dictionary<T>>
+```
+
+Convenience function that creates a selector by combining them in an object. Example:
+
+```ts
+const getDataA = createSelector(...);
+const getDataB = createSelector(...);
+
+createStructuredSelector({
+  a: getDataA,
+  b: getDataB
+});
+
+// Is the same as
+
+createSelector(
+  [
+    getDataA,
+    getDataB
+  ],
+  (a, b) => ({
+    a,
+    b
+  }),
+  shallowCompare
+);
+```
+
+## Internal API
+
+> This API is only meant when building bindings of this library for state management ones (like Redux), for internal testing, or for low-level access to the internal cache. Normal usage of this library in individual projects shouldn't need any of these.
+
+Every selector created by `redux-views` has the following properties:
+
+* recomputations: Function that returns the number of computations performed by this selector.
+* resetRecomputations: Function that clears the number of computations.
+* dependencies: Original list of dependencies.
+* resultFunc: Original combiner function.
+
+Additionally, those selectors that have a selector created by `createIdSelector` in their dependency chain, will have:
+
+* idSelector: Function that returns the id for an instance.
+* use: Function that adds a usage to the ref count for a given instance.
+* clearCache: Function that immediately clears the cache.
+
+The most important function is `use`. It has the following signature:
+
+```ts
+function use(
+  id: string
+): () => void;
+```
+
+What this function does is mark that the value computed for the instance `id` is in use through a ref count.
+
+The function returned by `use` is the clean-up function, and when the ref count reaches 0, the value whose idSelector returns that `id` is removed from the cache.
+
+Typically, for every instance of a component, you want to grab the `id` of that instance by using the `idSelector` function and call `use` with it. Then, every time that `id` changes, call the clean-up function and call `use` again with the new id.
+
+This API was done with hooks in mind, which then becomes trivial: 
+
+```js
+const { idSelector, use } = selector;
+const id = idSelector(null, props);
+
+useEffect(() => use(id), [id, use]);
+```
