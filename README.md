@@ -144,7 +144,7 @@ This will allow you to get rid of all selector creators (`reselect@4.0`'s soluti
 
 ## Migrating from re-reselect
 
-`re-reselect` has a very similar concept to `redux-views`, but you had to defined a "keySelector" for every parametric selector you needed. So grabbing the example from their doc:
+`re-reselect` has a very similar concept to `redux-views`, but you had to define a "keySelector" for every parametric selector you needed. So grabbing the example from their doc:
 
 ```js
 const getUsers = state => state.users;
@@ -168,22 +168,20 @@ Now becomes
 
 ```js
 const getUsers = state => state.users;
-const getLibraries = state => state.libraries;
-const getLibraryName = libraryName => libraryName;
+const getLibraryName = createIdSelector(libraryName => libraryName);
 const getLibraryId = createSelector(
   [
-    getLibraries,
+    state => state.libraries,
     getLibraryName,
   ],
   (libraries, libraryName) => libraries[libraryName].id
 );
 
 const getUsersByLibrary = createSelector(
-  // inputSelectors
-  getUsers,
-  getLibraryId,
-
-  // resultFunc
+  [
+    getUsers,
+    getLibraryId,
+  ],
   (users, libraryId) => expensiveComputation(users, libraryId),
 );
 ```
