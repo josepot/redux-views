@@ -1,206 +1,195 @@
 # redux-views
 
-Redux-Views aims to solve the problem with [shared selectors](https://github.com/reduxjs/reselect#sharing-selectors-with-props-across-multiple-component-instances) in a way that makes them easier to compose and to work with.
+Selector library designed for state management libraries (like Redux), with built-in support for shared selectors.
 
-It solves the same problem that `re-reselect` tries to solve, but using a very different approach. Instead of
-"enhancing" `reselect`, `redux-views` is an all-in-one solution that tries to make the experience of working
-with shared selectors (almost) transparent for the user.
+## Installation
 
-The API of Redux-Views is almost identical to the API of `reselect`. Basically, it keeps `reselect`'s 2 high-level functions:
-- `createSelector` has the exact same signature.
-- `createStructureSelector` is identical to the one provided by `reselect` except that it only accepts the first argument.
-
-On top of those 2 functions, Redux-Views adds a new function: `createIdSelector`, which helps the library to identify those selectors that just return ids.
-
-Redux-Views also provides handy means for dealing with cache-invalidation. Its approach differs quite substantially from the one taken by `re-reselect`. Redux-Views prefferred approach consists of keeping an internal ref-count of the usages of a cache, in order to automatically clean it when those values are no longer needed.
-
-## The problem with reselect
-
-```js
-const getUsers = state => state.users
-const getPropId = (state, {id}) => id
-
-const getUser = createSelector(
-  [getUsers, getPropId],
-  (users, id) => users[id]
-)
-
-getUser(state, {id: '1'})
-getUser(state, {id: '2'})
-
-getUser(state, {id: '1'})
-getUser(state, {id: '2'})
-
-getUser.recomputations() // => 4
+```sh
+yarn add redux-views
 ```
 
-## Redux-Views solution
+## Simple usage
+
+Selectors are functions that compute derived data given a state, allowing that state to contain less redundant data.
 
 ```js
-const getUsers = state => state.users
-const getPropId = createIdSelector(({id}) => id)
+import { createSelector } from 'redux-views';
 
-const getUser = createSelector(
-  [getUsers, getPropId],
-  (users, id) => users[id]
-)
+const getAllCars = state => state.cars;
 
-getUser(state, {id: '1'})
-getUser(state, {id: '2'})
-
-getUser(state, {id: '1'})
-getUser(state, {id: '2'})
-getUser.recomputations() // => 2
+const getRunningCars = createSelector(
+  [getAllCars],
+  cars => cars.filter(car => car.isRunning)
+);
 ```
 
-The only difference is that the second snippet uses `createIdSelector` in the declaration of `getPropId`.
-
-`createIdSelector` takes a function that:
-- Receives all the parameters that are passed to the resulting selector __except for the state__
-- Must return the ID of the instance that consumes the resulting selector.
-And it returns a normal selector.
-
-Using this enhancer for generating id-selectors allows Redux-Views to understand the usages of the selectors that depend on them. In other words, using `createIdSelector` for creating selectors that return ids allows Redux-Views to optimally memoize the other selectors.
-
-For instance, consider this example:
+All selectors created by redux-views are memoized: This means that if you call a selector multiple times with the same state and parameters, you'll always get the same result, without running the computation again.
 
 ```js
-const getUsers = state => state.users
-const getLoadingUsers = state => state.loadingUsers
-const getPropId = createIdSelector(({id}) => id)
+const activeCars1 = getRunningCars(myState);
+const activeCars2 = getRunningCars(myState);
 
-const getUser = createSelector(
-  [getUsers, getPropId],
-  (users, id) => users[id]
-)
-
-const getIsUserLoading = createSelector(
-  [getLoadingUsers, getPropId],
-  (loadingUsers, id) => Boolean(loadingUsers[id])
-)
-
-const getUserInfo = createStructuredSelector({
-  user: getUser,
-  isLoading: getIsUserLoading,
-})
+assert(activeCars1 === activeCars2);
+assert(getRunningCars.recomputations() === 1);
 ```
 
-Both `getUsers` and `getIsUserLoading` depend on the same "id-selector": `getPropId`. Redux-Views has a way to know that the results of those selectors should be cached taking that id into account. On the other hand, `getuserInfo` depends on 2 different selectors that share the same "id-selector". Therefore, `getUserInfo` will also use that same id-selector in order to cache its results. Let's see it:
+## Parametric selectors
+
+More often than not, we need to build selectors that take parameters, usually to identify a specific instance. Imagine we want to build a selector that returns the passengers of a specific car. If we write the selector in a plain function, we can get an idea of what we need, but it won't memoize the results:
 
 ```js
-getUserInfo(state, {id: '1'})
-getUserInfo(state, {id: '2'})
+const getRunningCarPassengers = (state, props) => {
+  const { carId } = props;
 
-getUserInfo(state, {id: '1'})
-getUserInfo(state, {id: '2'})
+  const runningCars = getRunningCars(state);
+  const passengers = getPassengers(state);
 
-getUserInfo.recomputations() // => 2
-getIsUserLoading.recomputations() // => 2
-getUser.recomputations() // => 2
-```
+  const car = runningCars
+    .find(car => car.id === carId);
 
-The state has not changed and we have queried the same state using 2 different IDs. That is why all the selectors have been computed only twice. Now let's see what happens when we change the state in a way that does not affect the data of user "1" or user "2":
-
-```js
-const newState = {
-  ...state,
-  loadingUsers: { ...state.loadingUsers, '3': true }
+  return car.passengerIds
+    .map(id => passengers[id]);
 }
 
-getUserInfo(newState, {id: '1'})
-getUserInfo(newState, {id: '2'})
+const passengersCar1_0 = getRunningCarPassengers(state, { carId: 1 });
+const passengersCar2 = getRunningCarPassengers(state, { carId: 2 });
+const passengersCar1_1 = getRunningCarPassengers(state, { carId: 1 });
 
-getUserInfo.recomputations() // => 2
-getIsUserLoading.recomputations() // => 2
-getUser.recomputations() // => 2
+assert(passengersCar1_0 !== passengersCar1_1);
+// getRunningCarPassengers recomputed 3 times
 ```
 
-Again, the same number of computations, because nothing relevant has changed, awesome!
-
-Now let's try making a relevant change, the loading status of user "2":
+`redux-views` can create instance selectors like this one, which will be memoized as well. It just needs to know which parameters does it depend on. For this reason, we can create an id selector:
 
 ```js
-const newState = {
-  ...state,
-  loadingUsers: { ...state.loadingUsers, '2': true }
-}
+import { createIdSelector } from 'redux-views';
 
-getUserInfo(newState, {id: '1'})
-getUserInfo(newState, {id: '2'})
+const getCarIdProp = createIdSelector(props => props.carId);
+const getRunningCar = createSelector(
+  [
+    getRunningCars,
+    getCarIdProp
+  ],
+  (cars, carId) => cars.find(car => car.id === carId)
+);
+const getRunningCarPassengers = createSelector(
+  [
+    getRunningCar,
+    getPassengers
+  ],
+  (car, passengers) => car.passengerIds.map(id => passengers[id])
+);
 
-getUserInfo.recomputations() // => 3
-getIsUserLoading.recomputations() // => 3
-getUser.recomputations() // => 2
+const passengersCar1_0 = getRunningCarPassengers(state, { carId: 1 }); // computes
+const passengersCar2 = getRunningCarPassengers(state, { carId: 2 }); // computes
+const passengersCar1_1 = getRunningCarPassengers(state, { carId: 1 }); // cached
+
+assert(passengersCar1_0 === passengersCar1_1);
+assert(getRunningCars.recomputations() === 2);
 ```
 
-Notice how `getUserInfo` and `getIsUserLoading` have increased the number of recomputations, cool! However, the recomputations of `getUser` remain the same, right? That's because the part of the state that's relevant to `getUser` has not changed.
+This way, `redux-views` knows that `getRunningCarPassengers` will probably give different results for each `carId`, effectively allowing it to memoize the value for each one.
 
-I know what you must be thinking: what happens when a selector depends on more than one different id-selector?
+It's good to know that, by default, `redux-views` will keep those memoized values for as long as the application runs. However, it provides two ways of clearing the cache, either manually or with a ref count which automatically clears the cache when the selector is not used anymore. This is something internal and rarely used for individual projects, as it's meant for bindings with state management libraries.
 
-I'm glad that you asked. Let's try it:
+## Migrating from reselect@4.0
+
+This version of `redux-views` removes the variadic overload of `createSelector` from `reselect@4.0`, which means that all calls that were using this overload will need to be changed. For example:
 
 ```js
-const getUsers = state => state.users
-
-const getPropIdA = createIdSelector(({idA}) => idA)
-const getPropIdB = createIdSelector(({idB}) => idB)
-
-const userById = (users, id) => users[id]
-const getUserA = createSelector([getUsers, getPropIdA], userById)
-const getUserB = createSelector([getUsers, getPropIdB], userById)
-
-const getJoinedUsers = createSelector(
-  [getUserA, getUserB],
-  (userA, userB) => {
-    // => Some expensive operation in order to join 2 users
-  }
-)
+createSelector(
+  getRunningCars,
+  getPassengers,
+  (cars, passengers) => ...
+);
 ```
 
-In this example, `getUserA` and `getUserB` have different id-selectors and `getJoinedUsers` depends on both of them. So, what id is going to use `getJoinedUsers` in order to cache its results? Redux-Views will infer that by creating a new id-selector that is the combination of those 2. Let's see it in action:
+becomes
 
 ```js
-getJoinedUsers(state, {idA: '1', idB: '2'})
-getJoinedUsers(state, {idA: '3', idB: '4'})
-getJoinedUsers(state, {idA: '2', idB: '1'})
-getJoinedUsers(state, {idA: '4', idB: '3'})
-
-getJoinedUsers(state, {idA: '1', idB: '2'})
-getJoinedUsers(state, {idA: '3', idB: '4'})
-getJoinedUsers(state, {idA: '2', idB: '1'})
-getJoinedUsers(state, {idA: '4', idB: '3'})
-
-getJoinedUsers.recomputations() // => 4
-getUserA.recomputations() // => 4
-getUserB.recomputations() // => 4
+createSelector(
+  [
+    getRunningCars,
+    getPassengers,
+  ],
+  (cars, passengers) => ...
+);
 ```
 
-## Cache Invalidation
+That's the only breaking change for the simple usage. `redux-views` passes all the tests from `reselect@4.0`. There's a codemod in the works that will allow to replace all of these automatically.
 
-Just like `reselect` does, the selectors created with redux-views expose the following functions:
-- `resultFunc`
-- `recomputations`
-- `resetRecomputations`
-
-On top of those, redux-views also expose these functions:
-
-- `idSelector`: the selector that is being used in order to calculate the id of the instance that is consuming the selector.
-- `use`: a function that receives the id of the instance that is using it (the result of computing `idSelector`) and returns a function for unsubscribing.
-- `clearCache`: if you don't want to handle cache-invalidation through ref-counts, you can manually clear the cache using this function. By default it recursively clears the cache and also the cache of its dependencies. If you do not want to clear the cache recursively, use false as the first (and only) argument.
-
-In order to leverage the `use` function you could use a custom hook:
+Now, to make use of the built-in memoization in parametric selectors it will need extra work, but basically you'll need to find all of the selectors that use props, and replace them with a `createIdSelector`. Possible examples:
 
 ```js
-const usePropsSelector = (pSelector, props) => {
-  const { idSelector, use } = pSelector
-
-  const id = idSelector && idSelector(null, props)
-  const selector = useCallback(x => pSelector(x, props), [pSelector, id])
-  useEffect(() => use && use(id), [use, id])
-
-  return useSelector(selector);
-}
+createSelector(
+  getRunningCars,
+  (_, props) => props.carId,
+  (cars, carId) => cars[props.carId]
+);
 ```
 
-## Credits to:
-- [@voliva](https://github.com/voliva/): For helping with the definition of the API and for adding the typings.
+becomes
+
+```js
+const getCarIdProp = createIdSelector(props => props.carId);
+
+createSelector(
+  getRunningCars,
+  getCarIdProp,
+  (cars, carId) => cars[props.carId]
+);
+```
+
+This will allow you to get rid of all selector creators (`reselect@4.0`'s solution for memoizing shared parametric selectors)
+
+## Migrating from re-reselect
+
+`re-reselect` has a very similar concept to `redux-views`, but you had to defined a "keySelector" for every parametric selector you needed. So grabbing the example from their doc:
+
+```js
+const getUsers = state => state.users;
+const getLibraryId = (state, libraryName) => state.libraries[libraryName].id;
+
+const getUsersByLibrary = createCachedSelector(
+  // inputSelectors
+  getUsers,
+  getLibraryId,
+
+  // resultFunc
+  (users, libraryId) => expensiveComputation(users, libraryId),
+)(
+  // re-reselect keySelector (receives selectors' arguments)
+  // Use "libraryName" as cacheKey
+  (_state_, libraryName) => libraryName
+);
+```
+
+Now becomes
+
+```js
+const getUsers = state => state.users;
+const getLibraries = state => state.libraries;
+const getLibraryName = libraryName => libraryName;
+const getLibraryId = createSelector(
+  [
+    getLibraries,
+    getLibraryName,
+  ],
+  (libraries, libraryName) => libraries[libraryName].id
+);
+
+const getUsersByLibrary = createSelector(
+  // inputSelectors
+  getUsers,
+  getLibraryId,
+
+  // resultFunc
+  (users, libraryId) => expensiveComputation(users, libraryId),
+);
+```
+
+And we don't need to define any keySelector for every other selector we want to create that hangs from this one.
+
+## API
+
+TODO
