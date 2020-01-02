@@ -13,8 +13,5 @@ export default selectors => {
     vals.forEach((val, idx) => (res[ids[idx]] = val))
     return res
   }
-  return createSelector(
-    Object.values(selectors),
-    compute
-  )
+  return createSelector(Object.values(selectors), compute)
 }
