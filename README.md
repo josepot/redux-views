@@ -5,7 +5,7 @@ Selector library designed for state management libraries (like Redux), with buil
 ## Installation
 
 ```sh
-yarn add redux-views
+npm install --save redux-views
 ```
 
 ## Simple usage
@@ -35,7 +35,7 @@ assert(getRunningCars.recomputations() === 1);
 
 ## Parametric selectors
 
-More often than not, we need to build selectors that take parameters, usually to identify a specific instance. Imagine we want to build a selector that returns the passengers of a specific car. If we write the selector in a plain function, we can get an idea of what we need, but it won't memoize the results:
+Sometimes we need to build selectors that take parameters, usually to identify a specific instance. Consider the following selector which returns the passengers of a specific car:
 
 ```js
 const getRunningCarPassengers = (state, props) => {
@@ -59,7 +59,9 @@ assert(passengersCar1_0 !== passengersCar1_1);
 // getRunningCarPassengers recomputed 3 times
 ```
 
-`redux-views` can create instance selectors like this one, which will be memoized as well. It just needs to know which parameters does it depend on. For this reason, we can create an id selector:
+As you can imagine, the `getRunningCarPassengers` function is not memoized and it will re-evaluate every time that it's called.
+
+With `redux-views` we can create instance selectors like this one, which will be automatically memoized. It just needs to know which parameters does it depend on. For this reason, we can create an id selector:
 
 ```js
 import { createIdSelector } from 'redux-views';
@@ -285,11 +287,13 @@ The function returned by `use` is the clean-up function, and when the ref count 
 
 Typically, for every instance of a component, you want to grab the `id` of that instance by using the `idSelector` function and call `use` with it. Then, every time that `id` changes, call the clean-up function and call `use` again with the new id.
 
-This API was done with hooks in mind, which then becomes trivial: 
+This API makes is very easy to integrate with React. For instance, we could easily create a hook like `usePropsSelector` that uses the `useSelector` hook from `react-redux`: 
 
 ```js
-const { idSelector, use } = selector;
-const id = idSelector(null, props);
+const usePropsSelector = (selector, props) => {
+  const id = selector.idSelector && selector.idSelector(null, props);
+  useEffect(() => selector.use && selector.use(id), [selector, id]);
 
-useEffect(() => use(id), [id, use]);
+  return useSelector(x => selector(x, props));
+};
 ```
