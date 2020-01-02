@@ -48,19 +48,13 @@ const getUsers = prop('users')
 describe('createSelector', () => {
   describe('computes dependant function', () => {
     test('it works', () => {
-      const selector = createSelector(
-        [prop('a'), prop('b')],
-        (a, b) => a + b
-      )
+      const selector = createSelector([prop('a'), prop('b')], (a, b) => a + b)
       expect(selector({ a: '3', b: '4' })).toEqual('34')
       expect(selector({ a: 3, b: 4 })).toEqual(7)
     })
 
     test('should not recompute if its previous args have not changed', () => {
-      const selector = createSelector(
-        [prop('a'), prop('b')],
-        (a, b) => a + b
-      )
+      const selector = createSelector([prop('a'), prop('b')], (a, b) => a + b)
       expect(selector({ a: '3', b: '4' })).toEqual('34')
       expect(selector.recomputations()).toEqual(1)
       expect(selector({ a: '3', b: '4' })).toEqual('34')
@@ -84,14 +78,8 @@ describe('createCollectionSelector', () => {
   const getId = createIdSelector(prop('id'))
   const getUsers = prop('users')
   const getUserIds = prop('ids')
-  const getUser = createSelector(
-    [getId, getUsers],
-    prop
-  )
-  const getUserAge = createSelector(
-    [getUser],
-    prop('age')
-  )
+  const getUser = createSelector([getId, getUsers], prop)
+  const getUserAge = createSelector([getUser], prop('age'))
 
   const getUsersList = createSelector(
     [],
@@ -125,23 +113,14 @@ describe('id selectors', () => {
     getFromProp = createIdSelector(({ from }) => from.toString())
     getToProp = createIdSelector(({ to }) => to.toString())
 
-    getUserFrom = createSelector(
-      [getFromProp, getUsers],
-      prop
-    )
-    getUserTo = createSelector(
-      [getToProp, getUsers],
-      prop
-    )
+    getUserFrom = createSelector([getFromProp, getUsers], prop)
+    getUserTo = createSelector([getToProp, getUsers], prop)
 
     joinNames = jest.fn(
       ({ name: nameA }, { name: nameB }) => `${nameA}-${nameB}`
     )
 
-    getJoinedNames = createSelector(
-      [getUserFrom, getUserTo],
-      joinNames
-    )
+    getJoinedNames = createSelector([getUserFrom, getUserTo], joinNames)
   })
 
   describe('cache and recomputations', () => {

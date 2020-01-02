@@ -12,10 +12,7 @@ for (let i = 0; i < numOfStates; i++) {
 
 describe('selector', () => {
   test('basic selector', () => {
-    const selector = createSelector(
-      [state => state.a],
-      a => a
-    )
+    const selector = createSelector([state => state.a], a => a)
     const firstState = { a: 1 }
     const firstStateNewPointer = { a: 1 }
     const secondState = { a: 2 }
@@ -29,10 +26,7 @@ describe('selector', () => {
     expect(selector.recomputations()).toBe(2)
   })
   test("don't pass extra parameters to inputSelector when only called with the state", () => {
-    const selector = createSelector(
-      [(...params) => params.length],
-      a => a
-    )
+    const selector = createSelector([(...params) => params.length], a => a)
     expect(selector({})).toBe(1)
   })
   test('basic selector multiple keys', () => {
@@ -51,11 +45,7 @@ describe('selector', () => {
   })
   test('basic selector invalid input selector', () => {
     expect(() =>
-      createSelector(
-        [state => state.a],
-        'not a function',
-        (a, b) => a + b
-      )
+      createSelector([state => state.a], 'not a function', (a, b) => a + b)
     ).toThrow(/Selector creators expect all input-selectors to be functions/)
   })
   test('basic selector cache hit performance', () => {
@@ -100,10 +90,7 @@ describe('selector', () => {
     expect(totalTime < 1000).toBe(true)
   })
   test('memoized composite arguments', () => {
-    const selector = createSelector(
-      [state => state.sub],
-      sub => sub
-    )
+    const selector = createSelector([state => state.sub], sub => sub)
     const state1 = { sub: { a: 1 } }
     expect(selector(state1)).toEqual({ a: 1 })
     expect(selector(state1)).toEqual({ a: 1 })
@@ -134,27 +121,21 @@ describe('selector', () => {
   })
   test('recomputes result after exception', () => {
     let called = 0
-    const selector = createSelector(
-      [state => state.a],
-      () => {
-        called++
-        throw Error('test error')
-      }
-    )
+    const selector = createSelector([state => state.a], () => {
+      called++
+      throw Error('test error')
+    })
     expect(() => selector({ a: 1 })).toThrow('test error')
     expect(() => selector({ a: 1 })).toThrow('test error')
     expect(called).toBe(2)
   })
   test('memoizes previous result before exception', () => {
     let called = 0
-    const selector = createSelector(
-      [state => state.a],
-      a => {
-        called++
-        if (a > 1) throw Error('test error')
-        return a
-      }
-    )
+    const selector = createSelector([state => state.a], a => {
+      called++
+      if (a > 1) throw Error('test error')
+      return a
+    })
     const state1 = { a: 1 }
     const state2 = { a: 2 }
     expect(selector(state1)).toBe(1)
@@ -163,14 +144,8 @@ describe('selector', () => {
     expect(called).toBe(2)
   })
   test('chained selector', () => {
-    const selector1 = createSelector(
-      [state => state.sub],
-      sub => sub
-    )
-    const selector2 = createSelector(
-      [selector1],
-      sub => sub.value
-    )
+    const selector1 = createSelector([state => state.sub], sub => sub)
+    const selector2 = createSelector([selector1], sub => sub.value)
     const state1 = { sub: { value: 1 } }
     expect(selector2(state1)).toBe(1)
     expect(selector2(state1)).toBe(1)
@@ -240,7 +215,10 @@ describe('selector', () => {
   })
   test('structured selector with invalid arguments', () => {
     expect(() =>
-      createStructuredSelector(state => state.a, state => state.b)
+      createStructuredSelector(
+        state => state.a,
+        state => state.b
+      )
     ).toThrow(/expects first argument to be an object.*function/)
     expect(() =>
       createStructuredSelector({
@@ -250,10 +228,7 @@ describe('selector', () => {
     ).toThrow(/Selector creators expect all input-selectors to be functions/)
   })
   test('resetRecomputations', () => {
-    const selector = createSelector(
-      [state => state.a],
-      a => a
-    )
+    const selector = createSelector([state => state.a], a => a)
     expect(selector({ a: 1 })).toBe(1)
     expect(selector({ a: 1 })).toBe(1)
     expect(selector.recomputations()).toBe(1)
@@ -271,20 +246,14 @@ describe('selector', () => {
   })
   test('export last function as resultFunc', () => {
     const lastFunction = () => {}
-    const selector = createSelector(
-      [state => state.a],
-      lastFunction
-    )
+    const selector = createSelector([state => state.a], lastFunction)
     expect(selector.resultFunc).toBe(lastFunction)
   })
   test('export dependencies as dependencies', () => {
     const dependency1 = state => state.a
     const dependency2 = state => state.a
 
-    const selector = createSelector(
-      [dependency1, dependency2],
-      () => {}
-    )
+    const selector = createSelector([dependency1, dependency2], () => {})
     expect(selector.dependencies).toEqual([dependency1, dependency2])
   })
 })
