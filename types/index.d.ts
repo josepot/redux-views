@@ -21,13 +21,15 @@ export type OutputParametricSelector<S, P, R, C> = ParametricSelector<S, P, R> &
 /// createIdSelector ///
 ////////////////////////
 
-interface IdSelector<P> {
-  (props: P, ...args: any[]): string
-}
+export function createIdSelector<P, R extends string | number | boolean | undefined | null>(
+  idSelector: (props: P, ...args: any[]) => R,
+  serializeFn?: (value: R) => string
+): ParametricSelector<{}, P, R>;
 
-export function createIdSelector<P>(
-  idSelector: IdSelector<P>
-): ParametricSelector<{}, P, string>
+export function createIdSelector<P, R>(
+  idSelector: (props: P, ...args: any[]) => R,
+  serializeFn: (value: R) => string
+): ParametricSelector<{}, P, R>;
 
 //////////////////////
 /// createSelector ///
