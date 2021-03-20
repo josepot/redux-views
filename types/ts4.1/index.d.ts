@@ -33,57 +33,54 @@ export function createIdSelector<P>(
 /// createSelector ///
 //////////////////////
 
-type ExtractSelectorResult<
-  T extends ReadonlyArray<Selector<unknown, unknown>>
+type ExtractSelectorsResult<
+  T extends ReadonlyArray<
+    Selector<unknown, unknown> | ParametricSelector<unknown, unknown, unknown>
+  >
 > = {
-  [Index in keyof T]: T[Index] extends Selector<any, infer R> ? R : never
+  [Index in keyof T]: T[Index] extends Selector<any, infer Result>
+    ? Result
+    : T[Index] extends ParametricSelector<any, any, infer Result>
+    ? Result
+    : never
 }
-type ExtractSelectorInput<
-  T extends ReadonlyArray<Selector<unknown, unknown>>
+type ExtractSelectorsInput<
+  T extends ReadonlyArray<
+    Selector<unknown, unknown> | ParametricSelector<unknown, unknown, unknown>
+  >
 > = {
-  [Index in keyof T]: T[Index] extends Selector<infer I, any> ? I : never
+  [Index in keyof T]: T[Index] extends Selector<infer Input, any>
+    ? Input
+    : T[Index] extends ParametricSelector<infer Input, any, any>
+    ? Input
+    : never
 }
-type MergeTypes<T extends ReadonlyArray<unknown>> = T extends [
-  infer F,
-  ...(infer R)
+type ExtractSelectorsProps<
+  T extends ReadonlyArray<ParametricSelector<unknown, unknown, unknown>>
+> = {
+  [Index in keyof T]: T[Index] extends ParametricSelector<any, infer Props, any>
+    ? Props
+    : never
+}
+type MergeTypes<T extends ReadonlyArray<unknown>, Acc = {}> = T extends [
+  infer Front,
+  ...(infer Tail)
 ]
-  ? F & MergeTypes<R>
-  : {}
-
-type ExtractParametricSelectorResult<
-  T extends ReadonlyArray<ParametricSelector<unknown, unknown, unknown>>
-> = {
-  [Index in keyof T]: T[Index] extends ParametricSelector<any, any, infer R>
-    ? R
-    : never
-}
-type ExtractParametricSelectorProps<
-  T extends ReadonlyArray<ParametricSelector<unknown, unknown, unknown>>
-> = {
-  [Index in keyof T]: T[Index] extends ParametricSelector<any, infer P, any>
-    ? P
-    : never
-}
-type ExtractParametricSelectorInput<
-  T extends ReadonlyArray<ParametricSelector<unknown, unknown, unknown>>
-> = {
-  [Index in keyof T]: T[Index] extends ParametricSelector<infer I, any, any>
-    ? I
-    : never
-}
+  ? MergeTypes<Tail, Front & Acc>
+  : Acc
 
 type EqualityFn<T> = (a: T, b: T) => boolean
 interface SelectorCreator {
   <
     T,
     S extends ReadonlyArray<Selector<any, any>>,
-    Args extends ExtractSelectorResult<S>
+    Args extends ExtractSelectorsResult<S>
   >(
     selectors: [...S],
     combiner: (...results: Args) => T,
     equalityFn?: EqualityFn<T>
   ): OutputSelector<
-    MergeTypes<ExtractSelectorInput<S>>,
+    MergeTypes<ExtractSelectorsInput<S>>,
     T,
     (...results: Args) => T
   >
@@ -91,14 +88,14 @@ interface SelectorCreator {
   <
     T,
     S extends ReadonlyArray<ParametricSelector<any, any, any>>,
-    Args extends ExtractParametricSelectorResult<S>
+    Args extends ExtractSelectorsResult<S>
   >(
     selectors: [...S],
     combiner: (...results: Args) => T,
     equalityFn?: EqualityFn<T>
   ): OutputParametricSelector<
-    MergeTypes<ExtractParametricSelectorInput<S>>,
-    MergeTypes<ExtractParametricSelectorProps<S>>,
+    MergeTypes<ExtractSelectorsInput<S>>,
+    MergeTypes<ExtractSelectorsProps<S>>,
     T,
     (...results: Args) => T
   >
