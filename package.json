@@ -12,7 +12,14 @@
   ],
   "author": "Josep M Sobrepere (https://github.com/josepot)",
   "main": "lib/redux-views.js",
-  "types": "types/index.d.ts",
+  "types": "types/ts3.0.d.ts",
+  "typesVersions": {
+    ">=4.1": {
+      "*": [
+        "types/ts4.1/*"
+      ]
+    }
+  },
   "unpkg": "dist/redux-views.js",
   "module": "es/redux-views.js",
   "files": [
@@ -20,7 +27,8 @@
     "lib",
     "es",
     "src",
-    "types/index.d.ts"
+    "types/ts4.1/index.d.ts",
+    "types/ts3.0.d.ts"
   ],
   "scripts": {
     "clean": "rimraf lib dist es coverage",
@@ -31,7 +39,7 @@
     "test": "jest",
     "test:watch": "npm test -- --watch",
     "test:cov": "npm test -- --coverage",
-    "test:types": "dtslint types",
+    "test:types": "dtslint types/ts4.1",
     "build": "cross-env NODE_ENV=production rollup -c",
     "prepare": "npm run clean && npm run format:check && npm run lint && npm test"
   },
