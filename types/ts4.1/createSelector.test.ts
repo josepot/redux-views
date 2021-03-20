@@ -17,19 +17,19 @@ const areEqual = <T>(a: T, b: T) => a === b
 /// Homogenous state/props ///
 //////////////////////////////
 
-// $ExpectType OutputSelector<{ selectedContact: string; }, boolean, (res1: string, res2: string) => boolean>
+// $ExpectType OutputSelector<{ selectedContact: string; }, boolean, (a: string, b: string) => boolean>
 createSelector(
   [getSelectedContactId, getSelectedContactId],
   areEqual
 )
 
-// $ExpectType OutputParametricSelector<{ selectedContact: string; }, PropsA, boolean, (res1: string, res2: string) => boolean>
+// $ExpectType OutputParametricSelector<{ selectedContact: string; }, PropsA, boolean, (a: string, b: string) => boolean>
 createSelector(
   [getSelectedContactId, getContactId],
   areEqual
 )
 
-// $ExpectType OutputParametricSelector<{ selectedContact: string; }, PropsA, boolean, (res1: string, res2: string) => boolean>
+// $ExpectType OutputParametricSelector<{ selectedContact: string; }, PropsA, boolean, (a: string, b: string) => boolean>
 createSelector(
   [getSelectedContactId, contactIdSelector],
   areEqual
