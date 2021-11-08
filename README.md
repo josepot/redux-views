@@ -87,7 +87,7 @@ const passengersCar2 = getRunningCarPassengers(state, { carId: 2 }); // computes
 const passengersCar1_1 = getRunningCarPassengers(state, { carId: 1 }); // cached
 
 assert(passengersCar1_0 === passengersCar1_1);
-assert(getRunningCars.recomputations() === 2);
+assert(getRunningCar.recomputations() === 2);
 ```
 
 This way, `redux-views` knows that `getRunningCarPassengers` will probably give different results for each `carId`, effectively allowing it to memoize the value for each one.
